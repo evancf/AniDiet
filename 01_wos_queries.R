@@ -39,16 +39,59 @@ mampred_sp_ind <- filter(comm_ind, Mammal > 0)$Species %>% gsub("_", " ", .)
 mampred_sp_mad <- filter(comm_mad, Mammal > 0)$Species %>% gsub("_", " ", .)
 mampred_sp_neo <- filter(comm_neo, Mammal > 0)$Species %>% gsub("_", " ", .)
 
+mampred_sp <- c(mampred_sp_afr,
+                mampred_sp_ind,
+                mampred_sp_mad,
+                mampred_sp_neo)
+
 # All species
 all_sp_afr <- comm_afr$Species %>% gsub("_", " ", .)
 all_sp_ind <- comm_ind$Species %>% gsub("_", " ", .)
 all_sp_mad <- comm_mad$Species %>% gsub("_", " ", .)
 all_sp_neo <- comm_neo$Species %>% gsub("_", " ", .)
 
+all_sp <- c(all_sp_afr,
+            all_sp_ind,
+            all_sp_mad,
+            all_sp_neo)
+
 
 
 # Get Web of Science queries -------------------------------------------
 sid <- auth(username = NULL, password = NULL)
 
-paste("TS = (\"", all_sp_ind, "\" AND diet)", sep = "")
-query_wos("TS = (\"Puma concolor\" AND diet)", sid = sid)
+wos_terms <- paste("TS = (\"", all_sp, "\" AND diet)", sep = "")
+
+wos_res <- pull_wos(wos_terms[1], sid = sid)
+
+wos_x <- wos_res[[1]][0,]
+wos_x$species <- c()
+wos_x$mammal_predator <- c()
+wos_x$counter <- c()
+
+
+for(i in 1:length(wos_terms)){
+  dat <- pull_wos(wos_terms[i], sid = sid)[[1]]
+  if(nrow(dat) == 0) next
+  dat$species <- all_sp[i]
+  dat$mammal_predator <- ifelse(all_sp[i] %in% mampred_sp, 1, 0)
+  dat <- dat[sample(1:nrow(dat)),]
+  dat$counter <- 1:nrow(dat)
+  
+  wos_x <- rbind(wos_x, dat)
+  print(paste(i, "of", length(wos_terms)))
+}
+
+
+
+wos_afr <- wos_x %>% filter(species %in% all_sp_afr)
+wos_ind <- wos_x %>% filter(species %in% all_sp_ind)
+wos_mad <- wos_x %>% filter(species %in% all_sp_mad)
+wos_neo <- wos_x %>% filter(species %in% all_sp_neo)
+
+write.csv(wos_afr, file = "wos_afr.csv")
+write.csv(wos_ind, file = "wos_ind.csv")
+write.csv(wos_mad, file = "wos_mad.csv")
+write.csv(wos_neo, file = "wos_neo.csv")
+
+
