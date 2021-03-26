@@ -1,6 +1,6 @@
 library("tidyverse")
 
-install.packages("wosr")
+#install.packages("wosr")
 library("wosr")
 
 
@@ -55,6 +55,19 @@ all_sp <- c(all_sp_afr,
             all_sp_mad,
             all_sp_neo)
 
+
+# Make a dataframe of species names to output
+mam_checklist <- tibble(species = all_sp,
+                        region = rep(c("African",
+                                       "Indomalayan",
+                                       "Madagascan",
+                                       "Neotropical"), 
+                                     times = lapply(list(all_sp_afr,
+                                                         all_sp_ind,
+                                                         all_sp_mad,
+                                                         all_sp_neo),length)),
+                        mammal_predator = ifelse(all_sp %in% mampred_sp, 1, 0))
+write.csv(mam_checklist, "mam_checklist.csv")
 
 
 # Get Web of Science queries -------------------------------------------
