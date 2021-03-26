@@ -67,6 +67,7 @@ mam_checklist <- tibble(species = all_sp,
                                                          all_sp_mad,
                                                          all_sp_neo),length)),
                         mammal_predator = ifelse(all_sp %in% mampred_sp, 1, 0))
+                        mampred = ifelse(all_sp %in% mampred_sp, "yes", "no"))
 write.csv(mam_checklist, "mam_checklist.csv")
 
 
