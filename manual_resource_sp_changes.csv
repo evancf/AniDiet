@@ -1,0 +1,621 @@
+"","resource_sp","corrected_resource_sp"
+"1","Abelia chinensis",NA
+"2","Abrocoma bennetti",NA
+"3","Acorns",NA
+"4","Acouchi",NA
+"5","Actinopterygii",NA
+"6","Agamidae",NA
+"7","Agouti","Dasyprocta"
+"8","Agouti paca","Cuniculus paca"
+"9","Ailuropoda melanoleuca",NA
+"10","Ailurus fulgens",NA
+"11","Akodon",NA
+"12","Akodon olivaceus",NA
+"13","Akodontini",NA
+"14","Alces alces",NA
+"15","Ameiva ameiva",NA
+"16","Amounts of fruit",NA
+"17","Amphibia",NA
+"18","Ananas comosus",NA
+"19","Anas",NA
+"20","Anatidae",NA
+"21","Animal",NA
+"22","Animal matter",NA
+"23","Animal prey",NA
+"24","Anolis",NA
+"25","Anthic sexguttata",NA
+"26","Antimena",NA
+"27","Ants",NA
+"28","Anura",NA
+"29","Apodemus sylvaticus",NA
+"30","Aquatic invertebrates",NA
+"31","Aquatic vertebrates",NA
+"32","Arachnida",NA
+"33","Araneae",NA
+"34","Arbulus unedo",NA
+"35","Arctocarpus",NA
+"36","Arenga",NA
+"37","Arthropoda",NA
+"38","Artocarpus heterophyllus",NA
+"39","Asiatic black bears","Ursus thibetanus"
+"40","Astacoidea",NA
+"41","Asteroids",NA
+"42","Astrocarpus",NA
+"43","Astrocassine pleurostyloides",NA
+"44","Astrochelys radiata",NA
+"45","Auchenipteridae",NA
+"46","Avahi occidentalis",NA
+"47","Aves",NA
+"48","Axis axis",NA
+"49","Axis porcinus",NA
+"50","Badger","Meles"
+"51","Bakerella",NA
+"52","Bamboo creeper",NA
+"53","Bamboo grass",NA
+"54","Bambuseae",NA
+"55","Bark",NA
+"56","Baseonema acuminata",NA
+"57","Beeswax",NA
+"58","Beetle","Coleoptera"
+"59","Berberis buxifolia",NA
+"60","Berries",NA
+"61","Bird",NA
+"62","Blap orientalus",NA
+"63","Blattaria",NA
+"64","Blattodea",NA
+"65","Boa constrictor",NA
+"66","Boar",NA
+"67","Bos frontalis",NA
+"68","Bos javanicus",NA
+"69","Bos taurus",NA
+"70","Boselaphus tragocamelus",NA
+"71","Brachylaena",NA
+"72","Brachyura",NA
+"73","Bradypus",NA
+"74","Bridelia stipularis",NA
+"75","Bromelia balansae",NA
+"76","Brown bears","Ursus arctos"
+"77","Budorcas taxicolor",NA
+"78","Buds",NA
+"79","Buffalo","Bubalus"
+"80","Buffalo calf","Bubalus"
+"81","Bufo marinus",NA
+"82","Caimaninae",NA
+"83","Callichtyidae",NA
+"84","Callictrichidae",NA
+"85","Calves",NA
+"86","Canarium",NA
+"87","Canarium madagascariensis",NA
+"88","Cane mice","Zygodontomys"
+"89","Canis lupus familiaris",NA
+"90","Canthium",NA
+"91","Caphalostachium viguieri",NA
+"92","Capparis avicennifolia",NA
+"93","Capparis scabrida",NA
+"94","Capra aegagrus hircus",NA
+"95","Capra hircus",NA
+"96","Capra ibex",NA
+"97","Capreolus pygargus",NA
+"98","Capuronia madagascariensis",NA
+"99","Carabids","Carabidae"
+"100","Cariamidae",NA
+"101","Carica candicans",NA
+"102","Carica papaya",NA
+"103","Carnivora",NA
+"104","Carrion",NA
+"105","Cavia porcellus",NA
+"106","Caviidae",NA
+"107","Caviomorpha",NA
+"108","Cavy","Caviidae"
+"109","Cebidae",NA
+"110","Cecropia fruit","Cecropia"
+"111","Ceiba pentandra",NA
+"112","Cephalostachium viguieri",NA
+"113","Cervidae",NA
+"114","Cervus",NA
+"115","Cervus duvauceli",NA
+"116","Cervus elaphus",NA
+"117","Cervus elaphus xanthopygus",NA
+"118","Cervus nippon",NA
+"119","Cervus unicolor",NA
+"120","Chameleon","Chamaeleonidae"
+"121","Chameleons","Chamaeleonidae"
+"122","Characid fish","Characidae"
+"123","Characidae",NA
+"124","Characin fish","Characidae"
+"125","Charadiidae",NA
+"126","Cheetal deer","Axis axis"
+"127","Cheirogaleidae",NA
+"128","Cheirogaleus",NA
+"129","Cheirogaleus major",NA
+"130","Cheirogaleus medius",NA
+"131","Chelicerata",NA
+"132","Chelidae",NA
+"133","Chevrotain","Tragulidae"
+"134","Chilopoda",NA
+"135","Chilopods","Chilopoda"
+"136","Chinchilla",NA
+"137","Chiroptera",NA
+"138","Chloephaga picta",NA
+"139","Cichlidae",NA
+"140","Clerodendrum",NA
+"141","Coati","Procyonidae"
+"142","Coconuts","Cocos nucifera"
+"143","Coffea benghalensis",NA
+"144","Coleoptera",NA
+"145","Coleopteran larvae","Coleoptera"
+"146","Colesthus auriculata",NA
+"147","Colubridae",NA
+"148","Columbidae",NA
+"149","Consuming vertebrates","Vertebrata"
+"150","Coua coquereli",NA
+"151","Coua cristata",NA
+"152","Coua verreauxi",NA
+"153","Crab","Brachyura"
+"154","Crabs","Brachyura"
+"155","Cricetidae",NA
+"156","Cricetinae",NA
+"157","Crocidura",NA
+"158","Crops",NA
+"159","Crustacea",NA
+"160","Ctenomyidae",NA
+"161","Ctenomys magellanicus",NA
+"162","Cuniculus paca",NA
+"163","Cuon alpinus",NA
+"164","Cyamopsis tetragonoloba",NA
+"165","Cydonia oblonga",NA
+"166","Cyperus madagascariensis",NA
+"167","Dama dama",NA
+"168","Dasypodidae",NA
+"169","Dasyprocta",NA
+"170","Dasyprocta azarae",NA
+"171","Dasyprocta prymnolopha",NA
+"172","Dasyprocta punctata",NA
+"173","Dasypus novemcinctus",NA
+"174","Dermochelys coriacea",NA
+"175","Dholle","Cuon alpinus"
+"176","Dicrurus forficatus",NA
+"177","Didelphidae",NA
+"178","Didelphinae",NA
+"179","Didelphis marsupialis",NA
+"180","Dideraceae","Didiereaceae"
+"181","Didiereaceae",NA
+"182","Diospyros",NA
+"183","Diplopoda",NA
+"184","Dipodidae",NA
+"185","Dipolopoda",NA
+"186","Diporidium ciliatum parvilleanum",NA
+"187","Dombeya pubescens",NA
+"188","Doves","Columbidae"
+"189","Ducks sandpipers",NA
+"190","Dypsis",NA
+"191","Echimyidae",NA
+"192","Echinops",NA
+"193","Echinops telfairi",NA
+"194","Eels","Anguilliformes"
+"195","Eggs",NA
+"196","Elaphodus cephalophus",NA
+"197","Elephantidae",NA
+"198","Eligmodontia typus",NA
+"199","Eliurus",NA
+"200","Eliurus minor",NA
+"201","Eliurus myoxinus",NA
+"202","Emberizidae",NA
+"203","Embryophyta",NA
+"204","Erethizontidae",NA
+"205","Erythrinidae",NA
+"206","Erythroxylum sphaeranthum",NA
+"207","Eudromia elegans",NA
+"208","Eulemur",NA
+"209","Eulemur fulvus",NA
+"210","Eulemur mongoz",NA
+"211","Euphorbiaceae",NA
+"212","Excrement",NA
+"213","Ferns","Polypodiopsida"
+"214","Ficus",NA
+"215","Ficus lutea",NA
+"216","Ficus reflexa",NA
+"217","Fig leaves",NA
+"218","ﬁsh",NA
+"219","Fish crustaceans",NA
+"220","Flowers",NA
+"221","Flowoers","Flowers"
+"222","Foliage",NA
+"223","Fowl","Galloanserae"
+"224","Freshwater crabs","Brachyura"
+"225","Frog","Anura"
+"226","Fruit",NA
+"227","Fruits","Fruit"
+"228","Fulica",NA
+"229","Fungi",NA
+"230","Fungus","Fungi"
+"231","Furcifer lateralis",NA
+"232","Furnariidae",NA
+"233","Galea spixii",NA
+"234","Gallus gallus",NA
+"235","Gallus gallus domesticus",NA
+"236","Garbage",NA
+"237","Gastropoda",NA
+"238","Gazella bennetti",NA
+"239","Gecko","Gekkonidae"
+"240","Geckoes","Gekkonidae"
+"241","Gekkonidae",NA
+"242","Geochelone ynipthora",NA
+"243","Geogale aurita",NA
+"244","Geophagus brasiliensis",NA
+"245","Geothelphusa",NA
+"246","Gerbilinae","Gerbillinae"
+"247","Gerbillinae",NA
+"248","Giant rats","Rodentia"
+"249","Gramineae",NA
+"250","Graomys griseoflavus",NA
+"251","Grass","Poaceae"
+"252","Grass stems","Poaceae"
+"253","Grasses","Poaceae"
+"254","Grasshopers","Orthoptera"
+"255","Grasshopper","Orthoptera"
+"256","Grasshoppers","Orthoptera"
+"257","Grewia",NA
+"258","Ground bird","Aves"
+"259","Ground birds","Aves"
+"260","Ground squirrels","Marmotini"
+"261","Ground-dwelling birds","Aves"
+"262","Grubs",NA
+"263","Gryllidae",NA
+"264","Grylus sagillatus",NA
+"265","Guans","Cracidae"
+"266","Gum",NA
+"267","Hapalemur",NA
+"268","Hare","Leupos"
+"269","Harungana madagascariensis",NA
+"270","Helicopric bucephalus",NA
+"271","Hemicentetes",NA
+"272","Hemicentetes semispinosus",NA
+"273","Herbaceous plants",NA
+"274","Heteromyidae",NA
+"275","Hexapoda",NA
+"276","Himalayan black bear","Ursus thibetanus"
+"277","Hipposideros commersoni",NA
+"278","Hirundo",NA
+"279","Hissing cockroaches","Gromphadorhina portentosa"
+"280","Hog badgers","Arctonyx collaris"
+"281","Holochilus",NA
+"282","Homo sapiens",NA
+"283","Homopteran secretion",NA
+"284","Homopteran secretions",NA
+"285","Homopterans","Homoptera"
+"286","Hoplias malabaricus",NA
+"287","Human child","Homo sapiens"
+"288","Hydrochaeris hydrochaeris","Hydrochoerus hydrochaeris"
+"289","Hydrochoerus hydrochaeris",NA
+"290","Hylidae",NA
+"291","Hymenodictyon decary","Hymenodictyon"
+"292","Hymenoptera",NA
+"293","Hypogeomys",NA
+"294","Hypogeomys antimena",NA
+"295","Iguana",NA
+"296","Iguanidae",NA
+"297","Indian civets","Viverricula indica"
+"298","Indri indri",NA
+"299","Insect grubs",NA
+"300","Insect larvae",NA
+"301","Insect secretions",NA
+"302","Insectivores","Insectivora"
+"303","Invertebrates",NA
+"304","Invertebrates)","Invertebrates"
+"305","Isoptera",NA
+"306","Jungle fowl","Gallus gallus"
+"307","Juniperus oxycedrus",NA
+"308","Kerodon rupestris",NA
+"309","Kiwi fruit","Actinidia"
+"310","Labramia costata",NA
+"311","Lacertidae",NA
+"312","Lacertilia",NA
+"313","Lagidium",NA
+"314","Lama guanicoe",NA
+"315","Langurs",NA
+"316","Langurs (presbytis spp.)","Presbytis"
+"317","Larvae",NA
+"318","Leaf bases",NA
+"319","Leaf buds",NA
+"320","Leaves",NA
+"321","Leaves gum",NA
+"322","Lemur catta",NA
+"323","Lemuridae",NA
+"324","Lepidoptera",NA
+"325","Lepidoteran","Lepidoptera"
+"326","Lepilemur",NA
+"327","Lepilemur edwardsi",NA
+"328","Lepilemur ruficaudatus phaner furcifer",NA
+"329","Leptodactylidae",NA
+"330","Lepus",NA
+"331","Lepus europaeus",NA
+"332","Lepus europeus","Lepus europaeus"
+"333","Lepus nigricollis",NA
+"334","Lepus timidus",NA
+"335","Linociera tropophylla",NA
+"336","Lipotyphlans","Eulipotyphla"
+"337","Livestock",NA
+"338","Lizard","Squamata"
+"339","Lizards","Squamata"
+"340","Locusts","Locusta"
+"341","Long-tailed rats","Leopoldamys"
+"342","Loricariidae",NA
+"343","Lumbricina",NA
+"344","Lychees","Litchi chinensis"
+"345","Lynx",NA
+"346","Macaca fascicularis",NA
+"347","Macaca nemestrina",NA
+"348","Macphersonia gracilis",NA
+"349","Macrotarsomys",NA
+"350","Macrotarsomys bastardi",NA
+"351","Macrotarsomys ingens",NA
+"352","Malus domestica",NA
+"353","Mammalia",NA
+"354","Mammea",NA
+"355","Mangoes","Mangifera indica"
+"356","Manidae",NA
+"357","Maragaroperdix madagascariensis",NA
+"358","Marmosa",NA
+"359","Marmosidae",NA
+"360","Mazama",NA
+"361","Melursus ursinus",NA
+"362","Metatheria",NA
+"363","Microagale dobsoni",NA
+"364","Microcavia australis",NA
+"365","Microcebus",NA
+"366","Microcebus bertahe",NA
+"367","Microcebus griseorufus",NA
+"368","Microcebus murinus",NA
+"369","Microcebus rufus",NA
+"370","Microebus murinus",NA
+"371","Microgale",NA
+"372","Microgale brevicaudata",NA
+"373","Microgale cowani",NA
+"374","Microgalelongicaudata",NA
+"375","Microgalepusilla",NA
+"376","Mimoophis",NA
+"377","Mirafa hova",NA
+"378","Mirza coquereli",NA
+"379","Mole rats","Bathyergidae"
+"380","Mollusca",NA
+"381","Mongoose","Herpestidae"
+"382","Moschidae",NA
+"383","Moschiola",NA
+"384","Moschus moschiferus",NA
+"385","Mostly bamboo leaves","Bambusoideae"
+"386","Mouse deer","Tragulidae"
+"387","Mungotictis decemlineata",NA
+"388","Muntiacus",NA
+"389","Muntiacus muntjak",NA
+"390","Muntjac",NA
+"391","Murid rats","Muridae"
+"392","Muridae",NA
+"393","Murids","Muridae"
+"394","Mus",NA
+"395","Mus musculus",NA
+"396","Mushroom",NA
+"397","Muskrats","Ondatra zibethicus"
+"398","Myocastoridae",NA
+"399","Myriapoda",NA
+"400","Naemorhedus",NA
+"401","Naemorhedus caudatus",NA
+"402","Nasalis larvatus",NA
+"403","Nectar",NA
+"404","Nectarinia",NA
+"405","Nesomys",NA
+"406","Nestlings","Aves"
+"407","Niviventer coxinga",NA
+"408","No",NA
+"409","Nuts",NA
+"410","Nyctereutes procyonoides",NA
+"411","Nycticebus coucang",NA
+"412","Ochotonidae",NA
+"413","Octodon degus",NA
+"414","Odocoileus virginianus",NA
+"415","Of elephants","Elephantidae"
+"416","Of rhinos","Rhinocerotidae"
+"417","Oligochaetes",NA
+"418","Omnivores",NA
+"419","Onthophagus longicornis",NA
+"420","Opercularia gummifera",NA
+"421","Oplurus",NA
+"422","Orangutan carcass",NA
+"423","Orthopeterans",NA
+"424","Orthoptera",NA
+"425","Orthopterans","Orthoptera"
+"426","Oryctolagus",NA
+"427","Oryctolagus cuniculus",NA
+"428","Oryzorictes hova",NA
+"429","Ovis aries",NA
+"430","Ozotoceros bezoarticus",NA
+"431","Paca","Cuniculus"
+"432","Pacas","Cuniculus"
+"433","Paddy rice","Oryza sativa"
+"434","Palamnaeus",NA
+"435","Paleosuchus trigonatus",NA
+"436","Palm fruit",NA
+"437","Pandanus",NA
+"438","Panthera pardus",NA
+"439","Paralomys gerbillus",NA
+"440","Pargtridges","Phasianidae"
+"441","Partridges","Phasianidae"
+"442","Paspalum scrobiculatum",NA
+"443","Passer",NA
+"444","Passeridae",NA
+"445","Pavo",NA
+"446","Pecari tajacu",NA
+"447","Pelomedusa subrufa",NA
+"448","Pelomedusidae",NA
+"449","Penguin","Sphenisciformes"
+"450","Petaurista petaurista",NA
+"451","Petaurista philippensis",NA
+"452","Petioles",NA
+"453","Phasianidae",NA
+"454","Pheasants","Phasianidae"
+"455","Phragmites communis",NA
+"456","Phyllanthus casticum",NA
+"457","Phyllarthron bernierianum",NA
+"458","Phylloctenium decoryanum",NA
+"459","Phyllotis griseoflavus",NA
+"460","Pimelodidae",NA
+"461","Plant foods",NA
+"462","Plant material",NA
+"463","Plant matter",NA
+"464","Pods",NA
+"465","Pollen",NA
+"466","Pomatorhinus ruficollis",NA
+"467","Porcupine","Hystricomorpha"
+"468","Porcupines","Hystricomorpha"
+"469","Possibly rodents",NA
+"470","Potamochoerus",NA
+"471","Potamochoerus larvatus",NA
+"472","Poultry","Galliformes"
+"473","Presbytis entellus",NA
+"474","Primates",NA
+"475","Prolemur simus",NA
+"476","Propithecus",NA
+"477","Propithecus candidus",NA
+"478","Propithecus coquereli",NA
+"479","Propithecus diadema",NA
+"480","Propithecus diadema edwardsi",NA
+"481","Propithecus edwardsi",NA
+"482","Propithecus perrieri",NA
+"483","Propithecus tattersalli",NA
+"484","Propithecus verreauxi",NA
+"485","Prosopis juliflora",NA
+"486","Prune","Prunus domestica"
+"487","Psidium cattleyanum",NA
+"488","Psittacidae",NA
+"489","Pteromyini",NA
+"490","Pudu",NA
+"491","Pyxis planicauda",NA
+"492","Rangifer tarandus",NA
+"493","Rattus",NA
+"494","Rattus norvegicus",NA
+"495","Rattus rattus",NA
+"496","Ravenala madagascariensis",NA
+"497","Reithrodon",NA
+"498","Reptile","Reptilia"
+"499","Reptiles","Reptilia"
+"500","Retiles","Reptilia"
+"501","Rhinocerotidae",NA
+"502","Rhinocryptidae",NA
+"503","Rhizomes",NA
+"504","Rice rats","Oryzomys"
+"505","Ripe fruit",NA
+"506","Rodentia",NA
+"507","Rodents","Rodentia"
+"508","Roe","Capreolus capreolus"
+"509","Roe deer","Capreolus capreolus"
+"510","Roots",NA
+"511","Rothmannia",NA
+"512","Rothmannia tropophylla",NA
+"513","Rucervus duvauceli",NA
+"514","Rupicapra",NA
+"515","Rusa timorensis",NA
+"516","Rusa unicolor",NA
+"517","Ryukyu ﬂying fox","Pteropus dasymallus"
+"518","Saguinus midus",NA
+"519","Saimiri",NA
+"520","Sand",NA
+"521","Sandgrouses","Pteroclidae"
+"522","Sap",NA
+"523","Scarab beetle","Scarabaeoidea"
+"524","Scarabaeoidea",NA
+"525","Schinus molle",NA
+"526","Scincidae",NA
+"527","Sciuromorpha",NA
+"528","Scolopendra",NA
+"529","Scorpiones","Scropionidae"
+"530","Scropionidae",NA
+"531","Sea turtle",NA
+"532","Seeds",NA
+"533","Serow capricornis",NA
+"534","Serpentes",NA
+"535","Setifer setosus",NA
+"536","Shoots",NA
+"537","Siberian roe deer","Capreolus pygargus"
+"538","Sigmodon",NA
+"539","Sigmodon alstoni",NA
+"540","Sigmodon hispidus",NA
+"541","Skink","Scincidae"
+"542","Slots",NA
+"543","Snail","Gastropoda"
+"544","Snails","Gastropoda"
+"545","Soil",NA
+"546","Solanum lycocarpum",NA
+"547","Soricidae",NA
+"548","Spider","Aranae"
+"549","Spiny pocket mice","Chaetodipus spinatus"
+"550","Spiny-furred rats","Diplomys"
+"551","Spirostreptus",NA
+"552","Stem pith",NA
+"553","Stems",NA
+"554","Stock",NA
+"555","Streptopelia picturata",NA
+"556","Strigocuscus celebensis",NA
+"557","Strychinos","Strychnos"
+"558","Strychnos",NA
+"559","Sun bears","Helarctos malayanus"
+"560","Suncus madagascariensis",NA
+"561","Suncus murinus",NA
+"562","Sus barbatus",NA
+"563","Sus scrofa",NA
+"564","Synbranchidae",NA
+"565","Syzygium",NA
+"566","Tamandua",NA
+"567","Tamarindus indica",NA
+"568","Tamarindus indicus","Tamarindus indica"
+"569","Tapiridae",NA
+"570","Tatera indica",NA
+"571","Tayassu peccari",NA
+"572","Teiidae",NA
+"573","Tenrec",NA
+"574","Tenrec ecaudatus",NA
+"575","Tenrec eucaudatus",NA
+"576","Tenrecs","Tenrec"
+"577","Terminalia boivinii",NA
+"578","Termitoidae",NA
+"579","Testudines",NA
+"580","Testudinidae",NA
+"581","Tetracerus quadricornis",NA
+"582","Tetrastes bonasia",NA
+"583","Timaliidae",NA
+"584","Tinamidae",NA
+"585","Tinamiformes",NA
+"586","Toads","Anura"
+"587","Tortoise","Testudinidae"
+"588","Trachypithecus obscurus",NA
+"589","Tragulus",NA
+"590","Tragulus javanicus",NA
+"591","Trichodactylidae",NA
+"592","Trichodactylus fluviatilis",NA
+"593","Tropiduridae",NA
+"594","Trychypithecus obscurus",NA
+"595","Tubers",NA
+"596","Tumble bugs","Scarabaeoidea"
+"597","Tupaiidae",NA
+"598","Turdidae",NA
+"599","Turdoides",NA
+"600","Turnix nigricolis","Turnix nigricollis"
+"601","Turnix nigricollis",NA
+"602","Turtle","Testudines"
+"603","Ungulata",NA
+"604","Ungulates","Ungulata"
+"605","Upupa marginata",NA
+"606","Ursus arctos",NA
+"607","Varanidae",NA
+"608","Vertebrata",NA
+"609","Vespidae",NA
+"610","Viperidae",NA
+"611","Vizcacha","Lagidium"
+"612","Voles","Cricetidae"
+"613","Water buffalo calves","Bubalus bubalis"
+"614","White-tailed pine voles","Alticola albicauda"
+"615","Worms",NA
+"616","Xenopeltidae",NA
+"617","Zaedyus pichiy",NA
+"618","Zea mays",NA
+"619","Zenaida auriculata",NA
+"620","Zosterops",NA

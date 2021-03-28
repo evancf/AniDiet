@@ -1,7 +1,6 @@
 #install.packages("googlesheets4")
 library("googlesheets4")
 library("tidyverse")
-library("taxize")
 
 
 # Pull in data from google sheets -----------
@@ -81,83 +80,8 @@ for(i in 1:nrow(pred_dat)){
   }
 }
 
-
-
-# Fix up some issues with diet item names
+# Check out if there are any other issues that should be addressed at this stage
 unique(sort(pred_long$resource_sp))
-pred_long$resource_sp <- pred_long$resource_sp %>% tolower()
-
-# This is a little tricky because the order matters
-descriptors_to_remove <- c("adult ",
-                           " fawns",
-                           " fawn",
-                           "domestic ", "wild ",
-                           "large ammounts of ",
-                           "large ", 
-                           " cf. ", "occasional ", "other ",
-                           "particularly ",
-                           "rarely attack",
-                           "calves ",
-                           " eggs",
-                           "small ", "specialize in ",
-                           "young ")
-
-for(i in descriptors_to_remove){
-  pred_long$resource_sp <- gsub(i, "", pred_long$resource_sp, fixed = T)
-}
-
-words_to_remove <- c("a", "sp.", "spp.",
-                     "sp", "spp")
-
-inds <- which(sapply(strsplit(pred_long$resource_sp, " "), length) != 1)
-
-for(i in words_to_remove){
-  pred_long$resource_sp[inds] <- ifelse(word(pred_long$resource_sp[inds], 1) == i,
-                                        word(pred_long$resource_sp[inds], 2),
-                                        pred_long$resource_sp[inds])
-  
-  pred_long$resource_sp[inds] <- ifelse(word(pred_long$resource_sp[inds], 2) == i,
-                                        word(pred_long$resource_sp[inds], 1),
-                                        pred_long$resource_sp[inds])
-}
-
-pred_long$resource_sp <- pred_long$resource_sp %>% trimws()
-
-pred_long
-
-# Translate from common name to scientific name -----------
-c2s_names <- comm2sci(unique(sort(pred_long$resource_sp)))
-c2s_names1 <- unlist(c2s_names)
-c2s_names1[which(nchar(c2s_names1) > 0)] # Check if these seem right
-
-c2s_names1 <- c2s_names1 %>% bind_rows() %>% t() %>% # Why on earth is this not easier...
-  as.data.frame() %>% 
-  tibble(resource_sp = rownames(.)) %>% 
-  rename(new_resource_sp = V1)
-
-pred_long <- pred_long %>% left_join(c2s_names1) %>% 
-  mutate(resource_sp = ifelse(is.na(new_resource_sp),
-                              resource_sp,
-                              new_resource_sp)) %>% 
-  select(-new_resource_sp)
-
-
-# Clean things up a little bit
-
-firstup <- function(x) {
-  substr(x, 1, 1) <- toupper(substr(x, 1, 1))
-  x
-}
-
-pred_long$resource_sp <- pred_long$resource_sp %>% firstup()
-
 
 # Output to a csv file 
-
 write.csv(pred_long, "pred_long.csv")
-
-
-# Some summary stuff
-
-# How many predators are prey of other species?
-pred_long$consumer_sp[which(pred_long$consumer_sp %in% pred_long$resource_sp)] %>% unique()
