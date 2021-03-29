@@ -1,3 +1,3 @@
 # AniDiet
 
-Mining the ecological literature to understand who eats what and how that is changing. Starting with predator-prey interactions in the tropics.
+The Animal Diet database. Mining the ecological literature to understand who eats what in nature and how that's changing. Starting with predator-prey interactions in the tropics.
