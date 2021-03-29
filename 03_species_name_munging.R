@@ -62,7 +62,7 @@ pred_long$resource_sp <- pred_long$resource_sp %>% trimws()
 comm2sci_fixes <- read.csv("comm2sci_fixes.csv")[,-1] %>% tibble()
 
 
-pred_long <- pred_long %>% left_join(c2s_names1) %>% 
+pred_long <- pred_long %>% left_join(comm2sci_fixes) %>% 
   mutate(resource_sp = ifelse(is.na(new_resource_sp),
                               resource_sp,
                               new_resource_sp)) %>% 
@@ -105,6 +105,9 @@ pred_long <- pred_long %>% left_join(manual_resource_sp_changes) %>%
                               corrected_resource_sp)) %>% 
   select(-corrected_resource_sp)
 
+
+# Write this out as a tidy dataset
+write.csv(file = "pred_tidy.csv", pred_long)
 
 
 # Some summary stuff -----------
