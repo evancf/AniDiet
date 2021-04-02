@@ -76,6 +76,7 @@ for(i in reg){
     
     local_web_metrics[ind, metric_colnames] <- as.list(all_metrics)
     
+    print(j)
   }
   print(i)
 }

@@ -30,7 +30,19 @@ comm_list <- list(comm_afr, comm_ind, comm_mad, comm_neo)
 # Assemble networks at each site ------------
 
 # Get a metaweb (including a long version)
+# Will use each of the data sources
 pred_tidy <- read.csv("pred_tidy.csv")[,-1] %>% tibble()
+globi_tidy <- read.csv("globi_tidy.csv")[,-1] %>% tibble()
+source("02c_pull_CarniDiet_data.R")
+
+# This is a little clunky but will join these together
+pred_tidy_cols <- colnames(pred_tidy)
+
+pred_tidy <- bind_rows(pred_tidy, globi_tidy, carnidiet_tidy) %>% 
+  select(all_of(pred_tidy_cols))
+
+
+# Make sure (from pred_tidy)
 
 pred_tidy$consumer_sp <- pred_tidy$consumer_sp %>% word(start = 1, end = 2)
 pred_tidy$resource_sp <- pred_tidy$resource_sp %>% word(start = 1, end = 2)
@@ -61,6 +73,8 @@ get_combn_df <- function(x){
   dat
 }
 
+use_species_level_only <- T # THIS IS A KEY DECISION
+
 for(i in 1:length(reg)){
   web_list[[reg[i]]] <- list()
   
@@ -75,7 +89,11 @@ for(i in 1:length(reg)){
     sp_level_inds <- which(combn_df$sp_combn %in% pl$intx_sp)
     gen_level_inds <- which(combn_df$gen_combn %in% pl$intx_gen)
     
-    inds <- unique(c(sp_level_inds, gen_level_inds))
+    if(use_species_level_only){
+      inds <- unique(sp_level_inds)
+    } else{
+      inds <- unique(c(sp_level_inds, gen_level_inds))
+    }
     
     local_pl <- combn_df[inds, 
                    c("consumer_sp", "resource_sp")]
