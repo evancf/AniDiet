@@ -48,7 +48,7 @@ pred_tidy$consumer_sp <- pred_tidy$consumer_sp %>% word(start = 1, end = 2)
 pred_tidy$resource_sp <- pred_tidy$resource_sp %>% word(start = 1, end = 2)
 
 
-pl <- pred_tidy %>% filter(consumed = 1) %>% select("consumer_sp", "resource_sp")
+pl <- pred_tidy %>% filter(consumed == 1) %>% select("consumer_sp", "resource_sp")
 pl <- pl[which(sapply(strsplit(pl$resource_sp, " "), length)==2),]
 pl$consumer_gen <- word(pl$consumer_sp, 1)
 pl$resource_gen <- word(pl$resource_sp, 1)
