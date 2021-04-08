@@ -81,10 +81,3 @@ mamm.presence.by.carnicoords.wide <- spread(data = mamm.presence.by.carnicoords.
 # setwd("/nfs/efricke-data/species ranges/presence.by.carnicoords")
 save(mamm.presence.by.carnicoords.wide, file = "mamm.presence.by.carnicoords.wide.RData")
 
-
-
-# Want to do the same for coordinates around the world
-
-st_make_grid(my.poly, what = "centers")
-
-
