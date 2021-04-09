@@ -1,7 +1,4 @@
-# There is a weird issue with phylopars. Probably want to get PCA first
-
 library("tidyverse")
-
 
 # Load trait data -------------------------
 
@@ -265,8 +262,6 @@ impute_trait_data_phyla <- impute_trait_data[!duplicated(impute_trait_data$phyla
 impute_trait_data_iucn <- impute_trait_data[!duplicated(impute_trait_data$iucn2020_binomial),] %>% 
   select(-phylacine_binomial)
 
-colnames(intx_data_iucn) == colnames(intx_data_phyla)
-
 intx_data_phyla <- intx_data %>% 
   left_join(impute_trait_data_phyla, by = c("consumer_sp" = "phylacine_binomial")) %>% 
   left_join(impute_trait_data_phyla, by = c("resource_sp" = "phylacine_binomial"), suffix = c("_c", "_r")) %>% 
@@ -310,12 +305,79 @@ intx_data_both %>% select(all_of(focal_traits2)) %>% complete.cases() %>% table(
 intx_tidy <- filter(intx_data_both, complete.cases(select(intx_data_both, all_of(focal_traits2))))
 
 
+
+# Couple little things to fix
+# Make sure the outcome variable is a factor
+intx_tidy$consumed <- factor(intx_tidy$consumed)
+
+# Want to remove non-terrestrial species
+intx_tidy <- filter(intx_tidy, foraging_stratum_r != -1)
+
+# Couple columns where there is no variation
+cols_to_skip <- which(apply(intx_tidy, 2, function(x) length(levels(factor(x)))) == 1)
+intx_tidy <- intx_tidy %>% 
+  select(-all_of(cols_to_skip))
+
+
+# Keep only the columns used for analysis
+sp_col <- c("consumer_sp", "resource_sp")
+outcome_col <- "consumed"
+trait_col <- colnames(intx_tidy)[which(colnames(intx_tidy) == "adult_mass_g_c"): ncol(intx_tidy)]
+
+intx_tidy <- intx_tidy %>% 
+  select(all_of(c(sp_col, outcome_col, trait_col)))
+
+str(intx_tidy) # Looks good - note all numeric even for ones that are binary or ordered categories
+
+# Get "short" version of the dataset with only a single combination of
+# each consumer and resource species. In other words, reported as an interaction
+# anywhere or not
+
+intx_short <- intx_tidy[order(intx_tidy$consumed, decreasing = T),]
+intx_short <- intx_short[!duplicated(select(intx_short, c(consumer_sp, resource_sp))),]
+dim(intx_short)
+table(intx_short$consumed)
+
+# Lastly, we will add data showing that consumers of one species are not 
+# in the diet of the other (unless otherwise known)
+
+# First just reverse the names
+intx_inverse <- intx_short %>% 
+  select(consumer_sp, resource_sp, consumed) %>% 
+  filter(consumed == 1) %>% 
+  mutate(consumer_sp1 = resource_sp,
+         resource_sp1 = consumer_sp,
+         consumed1 = 0) %>% 
+  select(-consumer_sp, -resource_sp, -consumed) %>% 
+  mutate(consumer_sp = consumer_sp1,
+         resource_sp = resource_sp1,
+         consumed = consumed1) %>% 
+  select(-consumer_sp1, -resource_sp1, -consumed1)
+
+# Next remove any where the opposite is known to be true
+intx_short_consumed1 <- intx_short %>% filter(consumed == 1)
+observed_consumed <- select(intx_short_consumed1, consumer_sp, resource_sp) %>% apply(1, function(x) paste(x, collapse = " x "))
+inverse_combos <- select(intx_inverse, consumer_sp, resource_sp) %>% apply(1, function(x) paste(x, collapse = " x "))
+intx_inverse <- intx_inverse %>% 
+  filter(!inverse_combos %in% observed_consumed) # Note these are mainly carnivores
+
+intx_inverse <- intx_inverse %>% 
+  left_join(impute_trait_data, by = c("consumer_sp" = "phylacine_binomial")) %>% 
+  left_join(impute_trait_data, by = c("resource_sp" = "phylacine_binomial"), suffix = c("_c", "_r")) %>% 
+  select(all_of(c(sp_col, outcome_col, trait_col))) %>% 
+  filter(det_vend_c != 0 | det_vect_c != 0 | det_scav_c != 0 | det_vunk_c != 0) # Will remove "consumer" specie with no evidence of being vertebrate carnivores
+
+
+
+# Now add these on to the intx_short
+intx_short$consumed <- as.numeric(as.character(intx_short$consumed))
+intx_short <- intx_short %>% bind_rows(intx_inverse)
+intx_short$consumed <- factor(intx_short$consumed)
+
+
+
 # Write this to csv
-write.csv(file = "intx_tidy.csv", intx_tidy)
-
-
-
-
+write.csv(file = "intx_short.csv", intx_short)
 
 
 
