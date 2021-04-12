@@ -1,4 +1,5 @@
 # install.packages("tidymodels")
+# install.packages("tidypredict")
 # install.packages("keras")
 library("keras")
 library("tidymodels")
@@ -22,7 +23,7 @@ test_data <- testing(intx_split)
 
 # Make recipe ------------------------------------------------------------------
 
-biv_rec <- 
+nnet_rec <- 
   recipe(consumed ~ ., data = train_data) %>%
   step_BoxCox(all_numeric())%>%
   step_normalize(all_numeric()) %>%
@@ -30,23 +31,23 @@ biv_rec <-
 
 
 # For validation:
-val_normalized <- bake(biv_rec, new_data = test_data, all_predictors())
+val_normalized <- bake(nnet_rec, new_data = test_data, all_predictors())
 
 # For testing when we arrive at a final model: 
-test_normalized <- bake(biv_rec, new_data = test_data, all_predictors())
+test_normalized <- bake(nnet_rec, new_data = test_data, all_predictors())
 
 # For looking at model predicted vs observed training data
-train_normalized <- bake(biv_rec, new_data = train_data, all_predictors())
+train_normalized <- bake(nnet_rec, new_data = train_data, all_predictors())
 
 
 # Run model --------------------------------------------------------------------
 set.seed(4)
 nnet_fit <-
-  mlp(epochs = 50, hidden_units = 5, dropout = 0.1) %>%
+  mlp(epochs = 200, hidden_units = 10, dropout = 0.1) %>%
   set_mode("classification") %>% 
   # Also set engine-specific `verbose` argument to prevent logging the results: 
   set_engine("keras", verbose = T) %>%
-  fit(consumed ~ ., data = bake(biv_rec, new_data = NULL))
+  fit(consumed ~ ., data = bake(nnet_rec, new_data = NULL))
 
 nnet_fit
 
@@ -87,70 +88,161 @@ caret::confusionMatrix(factor(tr_results$consumed),
                        factor(tr_results$.pred_class))
 
 
-# Output tidymodel -------------------------------------------------------------
+# # Not easy to save this model... These dont work
+# # Save tidymodel -------------------------------------------------------------
+# # nnet_fit_parsed <- parse_model(nnet_fit)
+# # write_yaml(nnet_fit, "nnet_fit_parsed.yml")
+# #save(list = c("nnet_rec", "nnet_fit"), file = "intx_tidymodel.RData")
+# #saveRDS(nnet_fit, file = "nnet_fit.RDS")
+# nnet_fit %>% save_model_tf("nnet_fit")
 
-save(biv_rec, nnet_fit, file = "intx_tidymodel.RData")
-
-
-# Maybe want to use a lightgbm version?
 
 
 
-# # https://www.r-bloggers.com/2020/08/how-to-use-lightgbm-with-tidymodels/
-# 
-# library(doParallel)
-# all_cores <- parallel::detectCores(logical = FALSE)
-# registerDoParallel(cores = all_cores)
-# 
-# # set the random seed so we can reproduce any simulated results.
-# set.seed(1234)
-# # load the housing data and clean names
-# ames_data <- make_ames() %>%
-#   janitor::clean_names()
-# 
-# 
-# ames_split <- rsample::initial_split(
-#   ames_data,
-#   prop = 0.8,
-#   strata = sale_price
-# )
-# 
-# 
-# preprocessing_recipe <-
-#   recipes::recipe(sale_price ~ ., data = training(ames_split)) %>%
-#   # combine low frequency factor levels
-#   recipes::step_other(all_nominal(), threshold = 0.01) %>%
-#   # remove no variance predictors which provide no predictive information 
-#   recipes::step_nzv(all_nominal()) %>%
-#   # prep the recipe so it can be used on other data
-#   prep()
-# 
-# 
-# 
-# ames_cv_folds <-
-#   recipes::bake(
-#     preprocessing_recipe,
-#     new_data = training(ames_split)
-#   ) %>%
-#   rsample::vfold_cv(v = 5)
-# 
-# 
-# 
-# lightgbm_model<-
-#   parsnip::boost_tree(
-#     mode = "regression",
-#     trees = 1000,
-#     min_n = tune(),
-#     tree_depth = tune(),
-#   ) %>%
-#   set_engine("lightgbm", objective = "reg:squarederror",verbose=-1)
-# 
-# 
-# 
-# lightgbm_params <-
-#   dials::parameters(
-#     # The parameters have sane defaults, but if you have some knowledge 
-#     # of the process you can set upper and lower limits to these parameters.
-#     min_n(), # 2nd important
-#     tree_depth() # 3rd most important
-#   )
+
+
+# Make world wide web predictions ------------------------------
+
+# Load trait data
+impute_trait_data <- read.csv("impute_trait_data.csv")[,-1] %>% tibble()
+
+
+# Load matrix of mammal presence
+load("m.mamm.pres.nat.RData")
+load("m.mamm.current.RData")
+
+
+# Fix up rownames
+rownames(m.mamm.pres.nat) <- gsub("/Users/efricke/Dropbox/*Science/*Research/*SESYNC/1 Predicting interactions/Data/distribution/range maps/Phylacine 1.2.1/Ranges/Present natural/",
+                                  "", 
+                                  rownames(m.mamm.pres.nat), fixed = T)
+
+
+# Remove those that forage in marine environments
+impute_trait_data <- impute_trait_data %>% 
+  filter(foraging_stratum != -1)
+
+# Also can skip these marine foraging species in the range matrices
+m.mamm.pres.nat <- m.mamm.pres.nat[rownames(m.mamm.pres.nat) %in% impute_trait_data$phylacine_binomial,]
+m.mamm.current <- m.mamm.current[rownames(m.mamm.current) %in% impute_trait_data$phylacine_binomial,]
+
+# Lastly, remove humans
+m.mamm.pres.nat <- m.mamm.pres.nat[rownames(m.mamm.pres.nat) != "Homo sapiens",]
+m.mamm.current <- m.mamm.current[rownames(m.mamm.current) != "Homo sapiens",]
+
+# Function to get all pairwise consumer / resource combination given a species list
+get_combn_df <- function(x, sp_combn = T, gen_combn = T){
+  
+  dat <- cbind(combn(x, 2), combn(x, 2)[2:1,]) %>% t() %>% as.data.frame()
+  colnames(dat) <- c("consumer_sp", "resource_sp")
+  
+  if(sp_combn){
+    dat$sp_combn <- paste(dat$consumer_sp, dat$resource_sp)
+  }
+  
+  if(gen_combn){
+    dat$gen_combn <- paste(word(dat$consumer_sp, 1), word(dat$resource_sp, 1))
+  }
+  
+  dat
+}
+
+
+# Want to get a grid of points that we'll actually get values for (because this take a while...)
+xx <- seq(1, 360, by = 1)
+yy <- seq(1, 142, by = 1)
+
+
+# Get some cells to actually sample (not every single one at this point)
+cells_to_sample <- apply(expand.grid(yy, xx),
+                         1,
+                         function(x) ((x[1] - 1) * 360 + x[2])) %>% sort()
+
+# Also want to skip ones in the ocean
+cells_to_sample <- cells_to_sample[cells_to_sample %in% which(colSums(m.mamm.pres.nat)>1)]
+
+# Get webs at every single site.
+i <- 120 # Arctic
+i <- 9802 # North America
+i <- 11809 # China
+i <- 23325 # SE Asia
+i <- 20353 # Africa
+
+# Will save the networks in a list object
+web_pres_nat <- list()
+web_current <- list()
+
+# For loop to make webs at every study location
+
+for(i in cells_to_sample){
+  ind <- which(cells_to_sample == i)
+  
+  spp_pres_nat <- rownames(m.mamm.pres.nat)[m.mamm.pres.nat[,i]]
+  spp_current <- rownames(m.mamm.current)[m.mamm.current[,i]]
+  
+  # Will skip ones where there's only one species in the pixel
+  if(length(spp_pres_nat) < 2 | length(spp_current) < 2) next()
+  
+  # Get combination df
+  dat_pres_nat <- get_combn_df(spp_pres_nat, sp_combn = F, gen_combn = F)
+  dat_current <- get_combn_df(spp_current, sp_combn = F, gen_combn = F)
+  
+  # Join with traits
+  dat_pres_nat <- dat_pres_nat %>% 
+    left_join(impute_trait_data, by = c("consumer_sp" = "phylacine_binomial")) %>% 
+    left_join(impute_trait_data, by = c("resource_sp" = "phylacine_binomial"), suffix = c("_c", "_r")) %>% 
+    filter(det_vend_c != 0 | det_vect_c != 0 | det_scav_c != 0 | det_vunk_c != 0)
+  
+  dat_current <- dat_current %>% 
+    left_join(impute_trait_data, by = c("consumer_sp" = "phylacine_binomial")) %>% 
+    left_join(impute_trait_data, by = c("resource_sp" = "phylacine_binomial"), suffix = c("_c", "_r")) %>% 
+    filter(det_vend_c != 0 | det_vect_c != 0 | det_scav_c != 0 | det_vunk_c != 0)
+  
+  # Will skip ones where there's only one species in the pixel
+  if(dim(dat_pres_nat)[1] < 2 | dim(dat_current)[1] < 2) next()
+  
+  # Make predictions
+  dat_pres_nat_normalized <- bake(nnet_rec, new_data = dat_pres_nat, all_predictors())
+  dat_current_normalized <- bake(nnet_rec, new_data = dat_current, all_predictors())
+  
+  dat_pres_nat <- dat_pres_nat %>%
+    bind_cols(predict(nnet_fit, new_data = dat_pres_nat_normalized),
+              predict(nnet_fit, new_data = dat_pres_nat_normalized, type = "prob"))
+  
+  dat_current <- dat_current %>%
+    bind_cols(predict(nnet_fit, new_data = dat_current_normalized),
+              predict(nnet_fit, new_data = dat_current_normalized, type = "prob"))
+  
+  if(sum(as.numeric(as.character(dat_pres_nat$.pred_class))) < 2 |
+     sum(as.numeric(as.character(dat_current$.pred_class))) < 2) next()
+  
+  
+  web_pres_nat[[i]] <- dat_pres_nat %>% filter(.pred_class == 1) %>% select("consumer_sp", "resource_sp") %>% unique()
+  web_current[[i]] <- dat_current %>% filter(.pred_class == 1) %>% select("consumer_sp", "resource_sp") %>% unique()
+  
+  # # Turn these into a cheddar community
+  # ched_pres_nat <- Community(nodes = data.frame(node = unique(unlist(web_pres_nat[[i]]))),
+  #                            properties = list(title = 10137),
+  #                            trophic.links = web_pres_nat[[i]] %>% rename(consumer = consumer_sp,
+  #                                                          resource = resource_sp))
+  # ched_current <- Community(nodes = data.frame(node = unique(unlist(web_current[[i]]))),
+  #                            properties = list(title = 10137),
+  #                            trophic.links = web_current[[i]] %>% rename(consumer = consumer_sp,
+  #                                                                         resource = resource_sp))
+  # 
+  # 
+  # 
+  # grid_web_metrics[ind,-1] <- c(ched_pres_nat %>% NumberOfTrophicLinks(), # n_links_pres_nat
+  #                               ched_pres_nat %>% NumberOfNodes(), # n_nodes_pres_nat
+  #                               #TrophicChainsStats(ched_pres_nat)$chain.lengths %>% mean(), # mean_chain_length_pres_nat
+  #                               ched_current %>% NumberOfTrophicLinks(), # n_links_current
+  #                               ched_current %>% NumberOfNodes()#, # n_nodes_current
+  #                               #TrophicChainsStats(ched_current)$chain.lengths %>% mean()
+  #                               ) # mean_chain_length_current
+  
+  print(i / 50000)
+  
+}
+
+# Save this 
+save(web_pres_nat, web_current, file = "hindcast_webs.RData")
