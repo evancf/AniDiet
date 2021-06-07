@@ -107,6 +107,64 @@ caret::confusionMatrix(factor(tr_results$consumed),
 impute_trait_data <- read.csv("impute_trait_data.csv")[,-1] %>% tibble()
 
 
+# Diversion to get list of primarily carnivorous species 
+# First, pull potential mammals from carnidiet
+potential_mammals <- RCurl::getURL("https://raw.githubusercontent.com/osmiddleton/CarniDIET-Database/master/Version%201.0/Supplementary%20data/Potential%20species%20list.csv") %>% 
+  read.csv(text = .) %>% tibble()
+
+# Need to also get this for extinct species
+# (NOTE that this code is replicated in '09_web_change_metrics.R')
+te_dates <- read.table("Andermann/global_pyrate_species_list.txt", header = T) %>% tibble() %>% 
+  bind_cols(read.table("Andermann/global_ts_te_dates.txt", header = T) %>% tibble())
+
+te_dates <- te_dates %>% 
+  mutate(binomial = paste(id, taxon, sep = " ")) %>% 
+  dplyr::select(-starts_with("ts"))
+
+te_dates <- te_dates %>% filter(status == "extinct")
+
+# Need to reconcile names
+te_dates$binomial[!te_dates$binomial %in% impute_trait_data$phylacine_binomial]
+
+filter(impute_trait_data, word(phylacine_binomial,1) == "Tapirus") %>% select(phylacine_binomial, iucn2020_binomial)
+filter(impute_trait_data, word(phylacine_binomial,1) == "copei") %>% select(phylacine_binomial, iucn2020_binomial)
+filter(impute_trait_data, word(phylacine_binomial,1) == "Cervalces") %>% select(phylacine_binomial, iucn2020_binomial)
+
+filter(te_dates, word(binomial,1) == "Tapirus") %>% select(binomial)
+
+te_dates$binomial <- plyr::revalue(te_dates$binomial, 
+                                   c("Alces scotti" = "Cervalces scotti",
+                                     "Candiacervus SpII" = "Candiacervus spII",
+                                     #"Caprini indet" = "",
+                                     "Dicroceros sp" = "Dicroceros spA",
+                                     "Geocapromys SP_A" = "Geocapromys spA",
+                                     #"HexolobodontinaeGen_NOW Sp_NOW" = "",
+                                     "Homo denisovans" = "Homo spDenisova",
+                                     #"Hydrodamalis gigas" = "",
+                                     "Megaoryzomys Sp_Now" = "Megaoryzomys spA",
+                                     #"Neomonachus tropicalis" = "",
+                                     "Nesophontes SP_A" = "Nesophontes spA",
+                                     "Nesoryzomys Sp_B" = "Nesoryzomys spB",
+                                     "Nesoryzomys Sp_C" = "Nesoryzomys spC",
+                                     "Nesoryzomys Sp_D" = "Nesoryzomys spD",
+                                     "Nothrotheriops shastense" = "Nothrotheriops shastensis",
+                                     "Pachyarmaterium brasiliense" = "Pachyarmatherium brasiliense",
+                                     "Peroryctes SP_NOW" = "Peroryctes spA",
+                                     #"Peroryctinae GEN_NOW" = "",
+                                     "Tapirus copei" = "Tapirus merriami",
+                                     "Valgipes deformis" = "Valgipes bucklandi"#,
+                                     #"Zalophus japonicus" = ""
+                                   ))
+
+mammal_predator <- c(gsub("_"," ",potential_mammals$Bin.),
+                     impute_trait_data %>% 
+                       filter(phylacine_binomial %in% 
+                                te_dates$binomial & dphy_vertebrate > 50) %>% 
+                       pull(phylacine_binomial))
+
+impute_trait_data$mammal_predator <- impute_trait_data$phylacine_binomial %in% mammal_predator
+
+
 # Load matrix of mammal presence
 load("m.mamm.pres.nat.RData")
 load("m.mamm.current.RData")
@@ -191,12 +249,12 @@ for(i in cells_to_sample){
   dat_pres_nat <- dat_pres_nat %>% 
     left_join(impute_trait_data, by = c("consumer_sp" = "phylacine_binomial")) %>% 
     left_join(impute_trait_data, by = c("resource_sp" = "phylacine_binomial"), suffix = c("_c", "_r")) %>% 
-    filter(det_vend_c != 0 | det_vect_c != 0 | det_scav_c != 0 | det_vunk_c != 0)
+    filter(mammal_predator_c)#filter(det_vend_c != 0 | det_vect_c != 0 | det_scav_c != 0 | det_vunk_c != 0)
   
   dat_current <- dat_current %>% 
     left_join(impute_trait_data, by = c("consumer_sp" = "phylacine_binomial")) %>% 
     left_join(impute_trait_data, by = c("resource_sp" = "phylacine_binomial"), suffix = c("_c", "_r")) %>% 
-    filter(det_vend_c != 0 | det_vect_c != 0 | det_scav_c != 0 | det_vunk_c != 0)
+    filter(mammal_predator_c)#filter(det_vend_c != 0 | det_vect_c != 0 | det_scav_c != 0 | det_vunk_c != 0)
   
   # Will skip ones where there's only one species in the pixel
   if(dim(dat_pres_nat)[1] < 2 | dim(dat_current)[1] < 2) next()

@@ -48,6 +48,12 @@ load("hindcast_webs.RData")
 impute_trait_data <- read.csv("impute_trait_data.csv")[,-1] %>% tibble()
 
 
+# Load matrix of mammal presence ------------------------------
+
+load("m.mamm.pres.nat.RData")
+rownames(m.mamm.pres.nat) <- rownames(m.mamm.pres.nat) %>% basename(.)
+
+
 # Load extinction dates from Andermann ------------------------------
 
 te_dates <- read.table("Andermann/global_pyrate_species_list.txt", header = T) %>% tibble() %>% 
@@ -133,7 +139,11 @@ past_metrics <- expand_grid(cells_with_webs, focal_years, te_samp) %>%
   mutate(n_links = NA, n_nodes = NA,
          n_links_null = NA, n_nodes_null = NA)
 
+
 for(i in cells_with_webs){
+  # Get a vector of all species that naturally occur at this cell
+  all_sp <- rownames(m.mamm.pres.nat)[m.mamm.pres.nat[,i]] 
+  
   for(k in te_samp){ # Switching the indexing a little
     
     # Create vectors to be populated with a record of the mammal species
@@ -148,32 +158,28 @@ for(i in cells_with_webs){
       
       te_cell_samp <- paste("te", sample(1:99, 1), sep = ".")
       
+      # Globally extinct species by this year
+      global_extinct_j <- te_dates$binomial[te_dates[,te_cell_samp] >= j]
+      
+      # Locally extinct species by this year
+      local_extant_j <- all_sp[!all_sp %in% global_extinct_j]
+      
+      # Null extant species at this year (random extinctions)
+      local_extant_j_null <- all_sp %>% sample(length(local_extant_j), replace = F)
+      
       # Determine if the consumer and resource are absent at the given date
-      c_bool <-  !web_pres_nat[[i]][,1] %in% te_dates$binomial[te_dates[,te_cell_samp] >= j]
-      r_bool <-  !web_pres_nat[[i]][,2] %in% te_dates$binomial[te_dates[,te_cell_samp] >= j]
+      c_bool <-  web_pres_nat[[i]][,1] %in% local_extant_j
+      r_bool <-  web_pres_nat[[i]][,2] %in% local_extant_j
       
       past_web <- web_pres_nat[[i]][c_bool & r_bool,]
       
       past_metrics$n_links[ind] <- past_web %>% n_links_fun()
       past_metrics$n_nodes[ind] <- past_web %>% n_nodes_fun()
       
-      # Get record of the now extinct species
-      new_true_extinct <- tibble(new_true_extinct = c(web_pres_nat[[i]][,1][!c_bool], 
-                                                      web_pres_nat[[i]][,2][!r_bool]) %>% unique()) %>% 
-        filter(!new_true_extinct %in% true_extinct)
-      
-      true_extinct <- c(true_extinct, new_true_extinct$new_true_extinct)
-      
-      # For null simulation, choose random species
-      new_null_extinct <- unique(c(web_pres_nat[[i]][,1], web_pres_nat[[i]][,2])) %>% 
-        sample(dim(new_true_extinct)[1])
-      
-      null_extinct <- c(null_extinct, new_null_extinct)
-      
       
       # Perform similar calculations for web with randomized extinctions
-      c_bool_null <-  !web_pres_nat[[i]][,1] %in% null_extinct
-      r_bool_null <-  !web_pres_nat[[i]][,2] %in% null_extinct
+      c_bool_null <-  web_pres_nat[[i]][,1] %in% local_extant_j_null
+      r_bool_null <-  web_pres_nat[[i]][,2] %in% local_extant_j_null
       
       past_web_null <- web_pres_nat[[i]][c_bool_null & r_bool_null,]
       
@@ -185,6 +191,7 @@ for(i in cells_with_webs){
   }
   print(round(i / tail(cells_with_webs, 1), digits = 3))
 }
+
 
 write.csv(file = "past_metrics.csv", past_metrics)
 
