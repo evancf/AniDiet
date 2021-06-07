@@ -130,11 +130,19 @@ te_samp <- 1 #paste("te", 1, sep = ".")
 
 past_metrics <- expand_grid(cells_with_webs, focal_years, te_samp) %>% 
   rename(cell = cells_with_webs) %>% 
-  mutate(n_links = NA, n_nodes = NA)
+  mutate(n_links = NA, n_nodes = NA,
+         n_links_null = NA, n_nodes_null = NA)
 
 for(i in cells_with_webs){
-  for(j in focal_years){
-    for(k in te_samp){
+  for(k in te_samp){ # Switching the indexing a little
+    
+    # Create vectors to be populated with a record of the mammal species
+    # that went extinct in a given cell, or simulated to go extinct
+    # under a random simulation
+    true_extinct <- c()
+    null_extinct <- c()
+    
+    for(j in rev(focal_years)){
       
       ind <- which(past_metrics$cell == i & past_metrics$focal_years == j & past_metrics$te_samp == k)
       
@@ -149,6 +157,30 @@ for(i in cells_with_webs){
       past_metrics$n_links[ind] <- past_web %>% n_links_fun()
       past_metrics$n_nodes[ind] <- past_web %>% n_nodes_fun()
       
+      # Get record of the now extinct species
+      new_true_extinct <- tibble(new_true_extinct = c(web_pres_nat[[i]][,1][!c_bool], 
+                                                      web_pres_nat[[i]][,2][!r_bool]) %>% unique()) %>% 
+        filter(!new_true_extinct %in% true_extinct)
+      
+      true_extinct <- c(true_extinct, new_true_extinct$new_true_extinct)
+      
+      # For null simulation, choose random species
+      new_null_extinct <- unique(c(web_pres_nat[[i]][,1], web_pres_nat[[i]][,2])) %>% 
+        sample(dim(new_true_extinct)[1])
+      
+      null_extinct <- c(null_extinct, new_null_extinct)
+      
+      
+      # Perform similar calculations for web with randomized extinctions
+      c_bool_null <-  !web_pres_nat[[i]][,1] %in% null_extinct
+      r_bool_null <-  !web_pres_nat[[i]][,2] %in% null_extinct
+      
+      past_web_null <- web_pres_nat[[i]][c_bool_null & r_bool_null,]
+      
+      past_metrics$n_links_null[ind] <- past_web_null %>% n_links_fun()
+      past_metrics$n_nodes_null[ind] <- past_web_null %>% n_nodes_fun()
+      
+      
     }
   }
   print(round(i / tail(cells_with_webs, 1), digits = 3))
@@ -161,7 +193,9 @@ write.csv(file = "past_metrics.csv", past_metrics)
 prop_past_metrics <- past_metrics %>% 
   left_join(grid_web_metrics) %>% 
   mutate(n_links_change = n_links / n_links_pres_nat,
-         n_nodes_change = n_nodes / n_nodes_pres_nat) %>% 
+         n_nodes_change = n_nodes / n_nodes_pres_nat,
+         n_links_change_null = n_links_null / n_links_pres_nat,
+         n_nodes_change_null = n_nodes_null / n_nodes_pres_nat) %>% 
   left_join(continent_cells)
 
 prop_past_metrics <- prop_past_metrics %>%
@@ -169,6 +203,8 @@ prop_past_metrics <- prop_past_metrics %>%
   summarise(continent = first(continent),
             n_links_change = mean(n_links_change),
             n_nodes_change = mean(n_nodes_change),
+            n_links_change_null = mean(n_links_change_null),
+            n_nodes_change_null = mean(n_nodes_change_null),
             n_nodes_change_current = mean(n_nodes_current/n_nodes_pres_nat),
             n_links_change_current = mean(n_links_current/n_links_pres_nat))
 
@@ -225,6 +261,8 @@ for(i in levels(prop_past_metrics$continent)){
   dat <- prop_past_metrics %>% filter(continent == i) %>% 
     mutate(y1 = n_links_change, #log(n_links_change),
            y2 = n_nodes_change, #log(n_nodes_change),
+           y3 = n_links_change_null,
+           y4 = n_nodes_change_null,
            x = c(focal_years ^ (1/3)))
   
   if(i %in% c("Oceanic_main", "Caribbean")) next()
@@ -304,11 +342,22 @@ for(i in levels(prop_past_metrics$continent)){
   yy2_sehi <- dat %>% group_by(x) %>% summarize(sehi = se_fun(y2, dir = "hi")) %>% ungroup() %>% select(sehi) %>% unlist()
   yy2_selo <- dat %>% group_by(x) %>% summarize(selo = se_fun(y2, dir = "lo")) %>% ungroup() %>% select(selo) %>% unlist()
   
+  yy3_mean <- dat %>% group_by(x) %>% summarize(mean = mean(y3)) %>% ungroup() %>% select(mean) %>% unlist()
+  yy3_sehi <- dat %>% group_by(x) %>% summarize(sehi = se_fun(y3, dir = "hi")) %>% ungroup() %>% select(sehi) %>% unlist()
+  yy3_selo <- dat %>% group_by(x) %>% summarize(selo = se_fun(y3, dir = "lo")) %>% ungroup() %>% select(selo) %>% unlist()
+  
+  yy4_mean <- dat %>% group_by(x) %>% summarize(mean = mean(y4)) %>% ungroup() %>% select(mean) %>% unlist()
+  yy4_sehi <- dat %>% group_by(x) %>% summarize(sehi = se_fun(y4, dir = "hi")) %>% ungroup() %>% select(sehi) %>% unlist()
+  yy4_selo <- dat %>% group_by(x) %>% summarize(selo = se_fun(y4, dir = "lo")) %>% ungroup() %>% select(selo) %>% unlist()
+  
+  
   
   link_col <- rgb(217,95,2, maxColorValue = 255)
   link_col_poly <- rgb(217,95,2, maxColorValue = 255, alpha = 200)
   node_col <- rgb(117,112,179, maxColorValue = 255)
   node_col_poly <- rgb(117,112,179, maxColorValue = 255, alpha = 200)
+  null_col <- rgb(27,158,119, maxColorValue = 255)
+  null_col_poly <- rgb(27,158,119, maxColorValue = 255, alpha = 200)
   
   polygon(x = c(xx, rev(xx)), y = c(yy1_sehi, rev(yy1_selo)),
           border = F,
@@ -319,6 +368,16 @@ for(i in levels(prop_past_metrics$continent)){
           border = F,
           col = node_col_poly)
   lines(x = xx, y = yy2_mean, col = node_col)
+  
+  polygon(x = c(xx, rev(xx)), y = c(yy3_sehi, rev(yy3_selo)),
+          border = F,
+          col = null_col_poly)
+  lines(x = xx, y = yy3_mean, col = null_col)
+  
+  polygon(x = c(xx, rev(xx)), y = c(yy4_sehi, rev(yy4_selo)),
+          border = F,
+          col = "lightgrey")
+  lines(x = xx, y = yy4_mean, col = "darkgrey")
   
   if(counter == 1){
     text(x = 52,#-2.5,
