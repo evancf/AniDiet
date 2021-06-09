@@ -139,12 +139,14 @@ past_metrics <- expand_grid(cells_with_webs, focal_years, te_samp) %>%
   mutate(n_links = NA, n_nodes = NA,
          n_links_null = NA, n_nodes_null = NA)
 
-
+set.seed(4)
 for(i in cells_with_webs){
   # Get a vector of all species that naturally occur at this cell
   all_sp <- rownames(m.mamm.pres.nat)[m.mamm.pres.nat[,i]] 
   
   for(k in te_samp){ # Switching the indexing a little
+    
+    te_cell_samp <- paste("te", sample(1:99, 1), sep = ".")
     
     # Create vectors to be populated with a record of the mammal species
     # that went extinct in a given cell, or simulated to go extinct
@@ -156,16 +158,21 @@ for(i in cells_with_webs){
       
       ind <- which(past_metrics$cell == i & past_metrics$focal_years == j & past_metrics$te_samp == k)
       
-      te_cell_samp <- paste("te", sample(1:99, 1), sep = ".")
-      
       # Globally extinct species by this year
       global_extinct_j <- te_dates$binomial[te_dates[,te_cell_samp] >= j]
       
-      # Locally extinct species by this year
+      # Locally extant and extinct species by this year
       local_extant_j <- all_sp[!all_sp %in% global_extinct_j]
+      local_extinct_j <- all_sp[all_sp %in% global_extinct_j]
       
       # Null extant species at this year (random extinctions)
-      local_extant_j_null <- all_sp %>% sample(length(local_extant_j), replace = F)
+      # Sample additional species from among those extant in the null scenario
+      new_null_extinct <- all_sp[!all_sp %in% null_extinct] %>% 
+        sample(length(local_extinct_j) - length(null_extinct), replace = F)
+      
+      # Add these to the null_extinct vector, which will be updated at the next year
+      null_extinct <- c(null_extinct, new_null_extinct)
+      #local_extant_j_null <- all_sp %>% sample(length(local_extant_j), replace = F)
       
       # Determine if the consumer and resource are absent at the given date
       c_bool <-  web_pres_nat[[i]][,1] %in% local_extant_j
@@ -178,8 +185,8 @@ for(i in cells_with_webs){
       
       
       # Perform similar calculations for web with randomized extinctions
-      c_bool_null <-  web_pres_nat[[i]][,1] %in% local_extant_j_null
-      r_bool_null <-  web_pres_nat[[i]][,2] %in% local_extant_j_null
+      c_bool_null <-  !web_pres_nat[[i]][,1] %in% null_extinct
+      r_bool_null <-  !web_pres_nat[[i]][,2] %in% null_extinct
       
       past_web_null <- web_pres_nat[[i]][c_bool_null & r_bool_null,]
       
@@ -572,7 +579,7 @@ metric_names <- list(
 grid_longer$metric <- factor(grid_longer$metric, levels = c("delta_nodes",
                                                             "delta_links",
                                                             "delta_linkage_density"), 
-                             labels = c("Numer of species",
+                             labels = c("Number of species",
                                         "Number of food web links",
                                         "Linkage density (mean links per species)"))
 
