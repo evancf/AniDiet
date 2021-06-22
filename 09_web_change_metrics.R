@@ -139,68 +139,70 @@ past_metrics <- expand_grid(cells_with_webs, focal_years, te_samp) %>%
   mutate(n_links = NA, n_nodes = NA,
          n_links_null = NA, n_nodes_null = NA)
 
-set.seed(4)
-for(i in cells_with_webs){
-  # Get a vector of all species that naturally occur at this cell
-  all_sp <- rownames(m.mamm.pres.nat)[m.mamm.pres.nat[,i]] 
-  
-  for(k in te_samp){ # Switching the indexing a little
-    
-    te_cell_samp <- paste("te", sample(1:99, 1), sep = ".")
-    
-    # Create vectors to be populated with a record of the mammal species
-    # that went extinct in a given cell, or simulated to go extinct
-    # under a random simulation
-    true_extinct <- c()
-    null_extinct <- c()
-    
-    for(j in rev(focal_years)){
-      
-      ind <- which(past_metrics$cell == i & past_metrics$focal_years == j & past_metrics$te_samp == k)
-      
-      # Globally extinct species by this year
-      global_extinct_j <- te_dates$binomial[te_dates[,te_cell_samp] >= j]
-      
-      # Locally extant and extinct species by this year
-      local_extant_j <- all_sp[!all_sp %in% global_extinct_j]
-      local_extinct_j <- all_sp[all_sp %in% global_extinct_j]
-      
-      # Null extant species at this year (random extinctions)
-      # Sample additional species from among those extant in the null scenario
-      new_null_extinct <- all_sp[!all_sp %in% null_extinct] %>% 
-        sample(length(local_extinct_j) - length(null_extinct), replace = F)
-      
-      # Add these to the null_extinct vector, which will be updated at the next year
-      null_extinct <- c(null_extinct, new_null_extinct)
-      #local_extant_j_null <- all_sp %>% sample(length(local_extant_j), replace = F)
-      
-      # Determine if the consumer and resource are absent at the given date
-      c_bool <-  web_pres_nat[[i]][,1] %in% local_extant_j
-      r_bool <-  web_pres_nat[[i]][,2] %in% local_extant_j
-      
-      past_web <- web_pres_nat[[i]][c_bool & r_bool,]
-      
-      past_metrics$n_links[ind] <- past_web %>% n_links_fun()
-      past_metrics$n_nodes[ind] <- past_web %>% n_nodes_fun()
-      
-      
-      # Perform similar calculations for web with randomized extinctions
-      c_bool_null <-  !web_pres_nat[[i]][,1] %in% null_extinct
-      r_bool_null <-  !web_pres_nat[[i]][,2] %in% null_extinct
-      
-      past_web_null <- web_pres_nat[[i]][c_bool_null & r_bool_null,]
-      
-      past_metrics$n_links_null[ind] <- past_web_null %>% n_links_fun()
-      past_metrics$n_nodes_null[ind] <- past_web_null %>% n_nodes_fun()
-      
-      
-    }
-  }
-  print(round(i / tail(cells_with_webs, 1), digits = 3))
-}
+# set.seed(4)
+# for(i in cells_with_webs){
+#   # Get a vector of all species that naturally occur at this cell
+#   all_sp <- rownames(m.mamm.pres.nat)[m.mamm.pres.nat[,i]] 
+#   
+#   for(k in te_samp){ # Switching the indexing a little
+#     
+#     te_cell_samp <- paste("te", sample(1:99, 1), sep = ".")
+#     
+#     # Create vectors to be populated with a record of the mammal species
+#     # that went extinct in a given cell, or simulated to go extinct
+#     # under a random simulation
+#     true_extinct <- c()
+#     null_extinct <- c()
+#     
+#     for(j in rev(focal_years)){
+#       
+#       ind <- which(past_metrics$cell == i & past_metrics$focal_years == j & past_metrics$te_samp == k)
+#       
+#       # Globally extinct species by this year
+#       global_extinct_j <- te_dates$binomial[te_dates[,te_cell_samp] >= j]
+#       
+#       # Locally extant and extinct species by this year
+#       local_extant_j <- all_sp[!all_sp %in% global_extinct_j]
+#       local_extinct_j <- all_sp[all_sp %in% global_extinct_j]
+#       
+#       # Null extant species at this year (random extinctions)
+#       # Sample additional species from among those extant in the null scenario
+#       new_null_extinct <- all_sp[!all_sp %in% null_extinct] %>% 
+#         sample(length(local_extinct_j) - length(null_extinct), replace = F)
+#       
+#       # Add these to the null_extinct vector, which will be updated at the next year
+#       null_extinct <- c(null_extinct, new_null_extinct)
+#       #local_extant_j_null <- all_sp %>% sample(length(local_extant_j), replace = F)
+#       
+#       # Determine if the consumer and resource are absent at the given date
+#       c_bool <-  web_pres_nat[[i]][,1] %in% local_extant_j
+#       r_bool <-  web_pres_nat[[i]][,2] %in% local_extant_j
+#       
+#       past_web <- web_pres_nat[[i]][c_bool & r_bool,]
+#       
+#       past_metrics$n_links[ind] <- past_web %>% n_links_fun()
+#       past_metrics$n_nodes[ind] <- past_web %>% n_nodes_fun()
+#       
+#       
+#       # Perform similar calculations for web with randomized extinctions
+#       c_bool_null <-  !web_pres_nat[[i]][,1] %in% null_extinct
+#       r_bool_null <-  !web_pres_nat[[i]][,2] %in% null_extinct
+#       
+#       past_web_null <- web_pres_nat[[i]][c_bool_null & r_bool_null,]
+#       
+#       past_metrics$n_links_null[ind] <- past_web_null %>% n_links_fun()
+#       past_metrics$n_nodes_null[ind] <- past_web_null %>% n_nodes_fun()
+#       
+#       
+#     }
+#   }
+#   print(round(i / tail(cells_with_webs, 1), digits = 3))
+# }
+# 
+# 
+# write.csv(file = "past_metrics.csv", past_metrics)
 
-
-write.csv(file = "past_metrics.csv", past_metrics)
+past_metrics <- read.csv(file = "past_metrics.csv")[,-1]
 
 # Left join to pres_nat values
 
@@ -261,16 +263,41 @@ arrival_kya <-  tibble(continent = levels(prop_past_metrics$continent),
                                12
                        ))
 
-pdf(file = "change over time.pdf", width = 4.5, height = 5.5)
-par(mfrow = c(3,2))
+link_col <- rgb(217,95,2, maxColorValue = 255)
+link_col_poly <- rgb(217,95,2, maxColorValue = 255, alpha = 200)
+node_col <- rgb(117,112,179, maxColorValue = 255)
+node_col_poly <- rgb(117,112,179, maxColorValue = 255, alpha = 200)
+null_col <- rgb(27,158,119, maxColorValue = 255)
+null_col_poly <- rgb(27,158,119, maxColorValue = 255, alpha = 200)
+
+pdf(file = "change over time.pdf", width = 6.5, height = 5.5)
+
+left_rep <- 10
+right_rep <- 10
+mid_rep <- 2
+mat12 <- c(rep(14, 3), rep(1, left_rep), rep(2, right_rep), rep(13, mid_rep), rep(3, left_rep), rep(4, right_rep), 
+           rep(14, 3), rep(5, left_rep), rep(6, right_rep), rep(13, mid_rep), rep(7, left_rep), rep(8, right_rep), 
+           rep(14, 3), rep(9, left_rep), rep(10, right_rep), rep(13, mid_rep), rep(11, left_rep), rep(12, right_rep)) %>% 
+  matrix(nrow = 3, byrow = T)
+
+mat12 <- mat12[rep(1:nrow(mat12), each = 5),]
+
+mat12 <-  rbind(14, mat12) %>% rbind(14)
+
+left_mar <- c(2,3,2,1)
+left_mar <- c(2,1,2,3)
+
+layout(mat12)
+
+
+
 counter <- 1
-bottom_row_inds <- 5:6
+bottom_row_inds <- 1:2#5:6
 left_col_inds <- c(1,3,5)
 focal_year_labels <- c(0, 400, 3000, 10000, 23000, 46000, 80000, 126000)
 focal_year_labels <- c(0, 400, 10000, 46000, 126000)
 
 for(i in levels(prop_past_metrics$continent)){
-  
   
   dat <- prop_past_metrics %>% filter(continent == i) %>% 
     mutate(y1 = n_links_change, #log(n_links_change),
@@ -281,16 +308,16 @@ for(i in levels(prop_past_metrics$continent)){
   
   if(i %in% c("Oceanic_main", "Caribbean")) next()
   
-  if(counter %in% left_col_inds){
-    par(mar = c(3.8,5,1.1,0.2))
-  } else{
-    par(mar = c(3.8,4,1.1,1.2))
-  }
+  # if(counter %in% left_col_inds){
+  par(mar = c(0,2,2.1,0))
+  # } else{
+  #   par(mar = c(3.8,4,1.1,1.2))
+  # }
   
   plot(NA, 
        #data = dat,
        xlim = (c(126000, 0) ^(1/3)),
-       ylim = c(0.25, 1), #log(c(0.05, 1)),
+       ylim = c(0.350, 1), #log(c(0.05, 1)),
        pch = 16,
        col = rgb(0,0,1,0.1),
        xlab = "",
@@ -300,36 +327,71 @@ for(i in levels(prop_past_metrics$continent)){
        frame = F,
        las = 1)
   
-  text(52, 1.075, i, cex = 1.2, xpd = T, pos = 4)
+  rect(xleft = (filter(arrival_kya, continent == i)$min * 1000)^(1/3),
+       xright = (filter(arrival_kya, continent == i)$max * 1000)^(1/3),
+       ybottom = ifelse(i == "Madagascar", 0.5, 0.4),
+       ytop = 1.01,
+       border = F,
+       col = "lightgrey")
   
-  if(counter == 6) mtext("Thousand years before present", side = 1, line = 2.5, cex = 0.9, adj = 2.345, xpd = T)
-  if(counter == 3) mtext("Percent change", side = 2, line = 3.5, cex = 0.9)
+  if(counter == 2){
+    
+    text(x = 38,
+         y = 0.62,
+         pos = 4,
+         font = 3,
+         labels = "Observed")
+    arrows(x0 = 30,
+           x1 = 24,
+           y0 = 0.66,
+           y1 = 0.71,
+           length = 0.07)
+    
+    text(x = 13,
+         y = 0.94,
+         pos = 4,
+         font = 3,
+         labels = "Null")
+    arrows(x0 = 10,
+           x1 = 16,
+           y0 = 0.91,
+           y1 = 0.85,
+           length = 0.07)
+  }
+  
+  if(i %in% c("Northamerica", "Southamerica")){
+    mtext("Species", side = 1,
+          col = node_col,
+          line = 0.5, font = 2,
+          cex = 0.90, xpd = T)
+  }
+  
+  #text(52, 1.075, i, cex = 1.2, xpd = T, pos = 2)
+  
+  region_labels <- c("Africa", "Australia", NA, "Eurasia", "Madagascar",
+                     "North\nAmerica", NA, "South\nAmerica")
+  text(-5, 0.45, region_labels[which(levels(prop_past_metrics$continent) ==i)], cex = 1.2, xpd = T, pos = 2)
+  
+  if(counter == 2) mtext("Thousand years before present", side = 3, line = 2.75, cex = 0.9, adj = 1.5, xpd = T)
+  if(counter == 3) mtext("Percent change due to extinction", side = 2, line = 3.75, cex = 0.9, xpd = T)
   
   if(counter %in% bottom_row_inds){
-    axis(1, 
+    axis(3, 
          at = rev(focal_year_labels^(1/3)), 
          labels = rev(focal_year_labels/1000))
   } else{
-    axis(1, 
+    axis(3, 
          at = rev(focal_year_labels^(1/3)), 
          labels = NA)
   }
-
+  
   if(counter %in% left_col_inds){
-    axis(2, at = c(1, 0.75, 0.5, 0.25), #log(c(1, 0.5, 0.2, 0.05)), 
-         labels = c("0%", "-25%", "-50%", "-75%"), las = 1)
+    axis(2, at = c(1, 0.8, 0.6, 0.4), #log(c(1, 0.5, 0.2, 0.05)), 
+         labels = c("0%", "-20%", "-40%", "-60%"), las = 1)
   } else{
-    axis(2, at = c(1, 0.75, 0.5, 0.25), #log(c(1, 0.5, 0.2, 0.05)), 
+    axis(2, at = c(1, 0.8, 0.6, 0.4), #log(c(1, 0.5, 0.2, 0.05)), 
          labels = NA, las = 1)
   }
-    
-  
-  rect(xleft = (filter(arrival_kya, continent == i)$min * 1000)^(1/3),
-       xright = (filter(arrival_kya, continent == i)$max * 1000)^(1/3),
-       ybottom = 0.23,
-       ytop = 1.02,
-       border = F,
-       col = "lightgrey")
   
   xx <- c(focal_years ^ (1/3))
   
@@ -351,7 +413,7 @@ for(i in levels(prop_past_metrics$continent)){
   yy1_mean <- dat %>% group_by(x) %>% summarize(mean = mean(y1)) %>% ungroup() %>% select(mean) %>% unlist()
   yy1_sehi <- dat %>% group_by(x) %>% summarize(sehi = se_fun(y1, dir = "hi")) %>% ungroup() %>% select(sehi) %>% unlist()
   yy1_selo <- dat %>% group_by(x) %>% summarize(selo = se_fun(y1, dir = "lo")) %>% ungroup() %>% select(selo) %>% unlist()
-
+  
   yy2_mean <- dat %>% group_by(x) %>% summarize(mean = mean(y2)) %>% ungroup() %>% select(mean) %>% unlist()
   yy2_sehi <- dat %>% group_by(x) %>% summarize(sehi = se_fun(y2, dir = "hi")) %>% ungroup() %>% select(sehi) %>% unlist()
   yy2_selo <- dat %>% group_by(x) %>% summarize(selo = se_fun(y2, dir = "lo")) %>% ungroup() %>% select(selo) %>% unlist()
@@ -366,66 +428,110 @@ for(i in levels(prop_past_metrics$continent)){
   
   
   
-  link_col <- rgb(217,95,2, maxColorValue = 255)
-  link_col_poly <- rgb(217,95,2, maxColorValue = 255, alpha = 200)
-  node_col <- rgb(117,112,179, maxColorValue = 255)
-  node_col_poly <- rgb(117,112,179, maxColorValue = 255, alpha = 200)
-  null_col <- rgb(27,158,119, maxColorValue = 255)
-  null_col_poly <- rgb(27,158,119, maxColorValue = 255, alpha = 200)
   
-  polygon(x = c(xx, rev(xx)), y = c(yy1_sehi, rev(yy1_selo)),
-          border = F,
-          col = link_col_poly)
-  lines(x = xx, y = yy1_mean, col = link_col)
   
-  polygon(x = c(xx, rev(xx)), y = c(yy2_sehi, rev(yy2_selo)),
-          border = F,
-          col = node_col_poly)
-  lines(x = xx, y = yy2_mean, col = node_col)
-  
-  polygon(x = c(xx, rev(xx)), y = c(yy3_sehi, rev(yy3_selo)),
-          border = F,
-          col = null_col_poly)
-  lines(x = xx, y = yy3_mean, col = null_col)
   
   polygon(x = c(xx, rev(xx)), y = c(yy4_sehi, rev(yy4_selo)),
           border = F,
           col = "lightgrey")
   lines(x = xx, y = yy4_mean, col = "darkgrey")
   
-  if(counter == 1){
-    text(x = 52,#-2.5,
-         y = c(0.28, 0.37),
-         pos = 4,#2,
-         font = 3,
-         labels = c("Number of links",
-                    "Number of species"),
-         col = c(link_col, node_col))
-    
-    text(x = 15000^(1/3),
-         y = 0.8,
-         pos = 2,
-         font = 3,
-         labels = "Extinction\nonly")
-    arrows(x0 = 15000^(1/3),
-           x1 = 4000^(1/3),
-           y0 = 0.8 + 0.03,
-           y1 = 0.94,
-           length = 0.07)
-
-    
-    text(x = 500^(1/3),
-         y = 0.55,
-         pos = 2,
-         font = 3,
-         labels = "Extinction &\nrange change")
-    arrows(x0 = 500^(1/3),
-           x1 = 4^(1/3),
-           y0 = 0.6 + 0.03,
-           y1 = 0.72,
-           length = 0.07)
+  polygon(x = c(xx, rev(xx)), y = c(yy2_sehi, rev(yy2_selo)),
+          border = F,
+          col = node_col_poly)
+  lines(x = xx, y = yy2_mean, col = node_col)
+  
+  
+  
+  
+  
+  plot(NA, 
+       #data = dat,
+       xlim = (c(126000, 0) ^(1/3)),
+       ylim = c(0.350, 1), #log(c(0.05, 1)),
+       pch = 16,
+       col = rgb(0,0,1,0.1),
+       xlab = "",
+       ylab = "",
+       xaxt = "n",
+       yaxt = "n",
+       frame = F,
+       xpd = T,
+       las = 1)
+  
+  
+  axis(2, at = c(1, 0.8, 0.6, 0.4), #log(c(1, 0.5, 0.2, 0.05)), 
+       labels = NA, las = 1)
+  
+  rect(xleft = (filter(arrival_kya, continent == i)$min * 1000)^(1/3),
+       xright = (filter(arrival_kya, continent == i)$max * 1000)^(1/3),
+       ybottom = 0.4,
+       ytop = 1.01,
+       border = F,
+       col = "lightgrey")
+  
+  if(i %in% c("Northamerica", "Southamerica")){
+    mtext("Links", side = 1, 
+          line = 0.5, font = 2,
+          col = link_col,
+          cex = 0.90, xpd = T)
   }
   
+  polygon(x = c(xx, rev(xx)), y = c(yy3_sehi, rev(yy3_selo)),
+          border = F,
+          col = "lightgrey")#null_col_poly)
+  lines(x = xx, y = yy3_mean, col = "darkgrey")#null_col)
+  
+  polygon(x = c(xx, rev(xx)), y = c(yy1_sehi, rev(yy1_selo)),
+          border = F,
+          col = link_col_poly)
+  lines(x = xx, y = yy1_mean, col = link_col)
+  
+  
+  
+  if(counter %in% bottom_row_inds){
+    axis(3, 
+         at = rev(focal_year_labels^(1/3)), 
+         labels = rev(focal_year_labels/1000))
+  } else{
+    axis(3, 
+         at = rev(focal_year_labels^(1/3)), 
+         labels = NA)
+  }
+  
+  # if(counter == 1){
+  #   text(x = 52,#-2.5,
+  #        y = c(0.28, 0.37),
+  #        pos = 4,#2,
+  #        font = 3,
+  #        labels = c("Number of links",
+  #                   "Number of species"),
+  #        col = c(link_col, node_col))
+  #   
+  #   text(x = 15000^(1/3),
+  #        y = 0.8,
+  #        pos = 2,
+  #        font = 3,
+  #        labels = "Extinction\nonly")
+  #   arrows(x0 = 15000^(1/3),
+  #          x1 = 4000^(1/3),
+  #          y0 = 0.8 + 0.03,
+  #          y1 = 0.94,
+  #          length = 0.07)
+  #   
+  #   
+  #   text(x = 500^(1/3),
+  #        y = 0.55,
+  #        pos = 2,
+  #        font = 3,
+  #        labels = "Extinction &\nrange change")
+  #   arrows(x0 = 500^(1/3),
+  #          x1 = 4^(1/3),
+  #          y0 = 0.6 + 0.03,
+  #          y1 = 0.72,
+  #          length = 0.07)
+  # }
+  # 
   if(counter == 2){
     
     
@@ -441,50 +547,52 @@ for(i in levels(prop_past_metrics$continent)){
            length = 0.07)
   }
   
-
-  
-  
-  dat2 <- dat %>% filter(focal_years == 0) %>% 
-    mutate(y1 = n_links_change_current, #log(n_links_change_current),
-           y2 = n_nodes_change_current) #log(n_nodes_change_current))
-  
-  x_pos <- -1.5
-  x_seg_len <- 1
-
-  segments(x0 = x_pos, 
-           lwd = 3,
-           lend = "butt",
-           xpd = T,
-           y0 = se_fun(dat2$y1, dir = "hi"),
-           y1 = se_fun(dat2$y1, dir = "lo"),
-           col = rgb(252,141,98, maxColorValue = 255, alpha = 200))
-  segments(x0 = x_pos - x_seg_len, x1 = x_pos + x_seg_len, y0 = mean(dat2$y1),
-         lwd = 2,
-         xpd = T,
-         pch = "-",
-         col = rgb(252,141,98, maxColorValue = 255))
   
   
   
-
-  segments(x0 = x_pos, 
-           lwd = 3,
-           lend = "butt",
-           xpd = T,
-           y0 = se_fun(dat2$y2, dir = "hi"),
-           y1 = se_fun(dat2$y2, dir = "lo"),
-           col = rgb(141,160,203, maxColorValue = 255, alpha = 200))
-  segments(x0 = x_pos - x_seg_len, x1 = x_pos + x_seg_len, y0 = mean(dat2$y2),
-         lwd = 2,
-         xpd = T,
-         pch = "-",
-         col = rgb(141,160,203, maxColorValue = 255))
+  # dat2 <- dat %>% filter(focal_years == 0) %>% 
+  #   mutate(y1 = n_links_change_current, #log(n_links_change_current),
+  #          y2 = n_nodes_change_current) #log(n_nodes_change_current))
+  # 
+  # x_pos <- -1.5
+  # x_seg_len <- 1
+  # 
+  # segments(x0 = x_pos, 
+  #          lwd = 3,
+  #          lend = "butt",
+  #          xpd = T,
+  #          y0 = se_fun(dat2$y1, dir = "hi"),
+  #          y1 = se_fun(dat2$y1, dir = "lo"),
+  #          col = rgb(252,141,98, maxColorValue = 255, alpha = 200))
+  # segments(x0 = x_pos - x_seg_len, x1 = x_pos + x_seg_len, y0 = mean(dat2$y1),
+  #          lwd = 2,
+  #          xpd = T,
+  #          pch = "-",
+  #          col = rgb(252,141,98, maxColorValue = 255))
+  # 
+  # 
+  # 
+  # 
+  # segments(x0 = x_pos, 
+  #          lwd = 3,
+  #          lend = "butt",
+  #          xpd = T,
+  #          y0 = se_fun(dat2$y2, dir = "hi"),
+  #          y1 = se_fun(dat2$y2, dir = "lo"),
+  #          col = rgb(141,160,203, maxColorValue = 255, alpha = 200))
+  # segments(x0 = x_pos - x_seg_len, x1 = x_pos + x_seg_len, y0 = mean(dat2$y2),
+  #          lwd = 2,
+  #          xpd = T,
+  #          pch = "-",
+  #          col = rgb(141,160,203, maxColorValue = 255))
   
   counter <- counter + 1
+  
   
 }
 
 dev.off()
+
 
 
 
@@ -598,6 +706,164 @@ grid_longer %>%
   theme_void() +
   coord_equal()
 dev.off()
+
+
+
+
+
+
+link_col <- rgb(217,95,2, maxColorValue = 255)
+link_col_poly <- rgb(217,95,2, maxColorValue = 255, alpha = 150)
+node_col <- rgb(117,112,179, maxColorValue = 255)
+node_col_poly <- rgb(117,112,179, maxColorValue = 255, alpha = 150)
+null_col <- rgb(27,158,119, maxColorValue = 255)
+null_col_poly <- rgb(27,158,119, maxColorValue = 255, alpha = 150)
+
+pdf(file = "extinction vs range loss.pdf", width = 4.5, height = 4.5)
+
+par(mar = c(1, 5, 4, 2))
+
+continent_df <- prop_past_metrics %>% filter(focal_years == 0) %>%
+  group_by(continent) %>% 
+  summarize(extinction_nodes_mean = mean(n_nodes_change),
+            extinction_nodes_hi = se_fun(n_nodes_change, dir = "hi"),
+            extinction_nodes_lo = se_fun(n_nodes_change, dir = "lo"),
+            extinction_links_mean = mean(n_links_change),
+            extinction_links_hi = se_fun(n_links_change, dir = "hi"),
+            extinction_links_lo = se_fun(n_links_change, dir = "lo"),
+            
+            current_nodes_mean = mean(n_nodes_change_current),
+            current_nodes_hi = se_fun(n_nodes_change_current, dir = "hi"),
+            current_nodes_lo = se_fun(n_nodes_change_current, dir = "lo"),
+            current_links_mean = mean(n_links_change_current),
+            current_links_hi = se_fun(n_links_change_current, dir = "hi"),
+            current_links_lo = se_fun(n_links_change_current, dir = "lo")) %>% 
+  filter(!continent %in% c("Oceanic_main", "Caribbean") & !is.na(continent))
+
+
+xx <- seq(1, 16, length.out = 6)
+plot(NA,
+     xlim = c(min(xx) - 1, max(xx) + 1),
+     ylim = c(0.2, 1),
+     frame = F,
+     xaxt = "n",
+     yaxt = "n",
+     xlab = "",
+     ylab = "")
+mtext("Percent change", side = 2, line = 3.5, cex = 1.2)
+
+#axis(3, at = xx, labels = NA)
+region_labels <- c("Africa", "Australia","Eurasia", "Madagascar",
+                   "N. America", "S. America")
+text(region_labels, x = xx-1, y = 1.02, pos = 4, srt = 45, xpd = T)
+axis(2, at = c(1, 0.8, 0.6, 0.4, 0.2), #log(c(1, 0.5, 0.2, 0.05)), 
+     labels = c("0%", "-20%", "-40%", "-60%", "-80%"), las = 1)
+seg_lwd <- 12
+
+x_diff <- 0.4
+segments(x0 = xx - x_diff,
+         y0 = 1,
+         y1 = continent_df$extinction_nodes_mean,
+         lend = "butt",
+         lwd = seg_lwd,
+         col = node_col)
+
+segments(x0 = xx - x_diff,
+         y0 = continent_df$extinction_nodes_mean,
+         y1 = continent_df$current_nodes_mean,
+         lend = "butt",
+         lwd = seg_lwd,
+         col = node_col_poly)
+
+arrows(x0 = xx - x_diff,
+       y0 = continent_df$extinction_nodes_lo,
+       y1 = continent_df$extinction_nodes_hi,
+       angle = 90,
+       code = 3,
+       length = 0.04,
+       col = "grey")
+
+arrows(x0 = xx - x_diff,
+       y0 = continent_df$current_nodes_lo,
+       y1 = continent_df$current_nodes_hi,
+       angle = 90,
+       code = 3,
+       length = 0.04,
+       col = "grey")
+
+segments(x0 = xx + x_diff,
+         y0 = 1,
+         y1 = continent_df$extinction_links_mean,
+         lend = "butt",
+         lwd = seg_lwd,
+         col = link_col)
+
+segments(x0 = xx + x_diff,
+         y0 = continent_df$extinction_links_mean,
+         y1 = continent_df$current_links_mean,
+         lend = "butt",
+         lwd = seg_lwd,
+         col = link_col_poly)
+
+arrows(x0 = xx + x_diff,
+       y0 = continent_df$extinction_links_lo,
+       y1 = continent_df$extinction_links_hi,
+       angle = 90,
+       code = 3,
+       length = 0.04,
+       col = "grey")
+
+arrows(x0 = xx + x_diff,
+       y0 = continent_df$current_links_lo,
+       y1 = continent_df$current_links_hi,
+       angle = 90,
+       code = 3,
+       length = 0.04,
+       col = "grey")
+
+segments(x0 = min(xx)-2, x1 = max(xx)+2, y0 = 1, lty = 2)
+
+points(x = c(14.5, 15.7, 15.7, 14.5),
+       y = c(0.22, 0.27, 0.22, 0.27),
+       pch = 15,
+       col = c(node_col_poly,
+               link_col,
+               link_col_poly,
+               node_col),
+       cex = 2)
+text(c(14.5, 15.7) - 0.7,
+     0.3,
+     pos = 4, 
+     srt = 45,
+     labels = c("Species", "Links"),
+     cex = 0.8)
+text(14.5,
+     c(0.22, 0.27),
+     pos = 2,
+     labels = c("Range change", "Extinction"),
+     cex = 0.8)
+
+
+dev.off()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
