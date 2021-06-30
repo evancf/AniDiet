@@ -143,6 +143,14 @@ if(!"impute_trait_data.csv" %in% list.files()){
 
 impute_trait_data <- read.csv("impute_trait_data.csv")[,-1] %>% tibble()
 
+# Diversion to get list of primarily carnivorous species 
+potential_mammals <- RCurl::getURL("https://raw.githubusercontent.com/osmiddleton/CarniDIET-Database/master/Version%201.0/Supplementary%20data/Potential%20species%20list.csv") %>% 
+  read.csv(text = .) %>% tibble()
+
+mammal_predator <- gsub("_"," ",potential_mammals$Bin.)
+
+impute_trait_data$mammal_predator <- impute_trait_data$phylacine_binomial %in% mammal_predator
+
 
 # Load interaction data -------------------------
 
@@ -251,7 +259,7 @@ firstup <- function(x) {
   x
 }
 intx_data$consumer_sp <- intx_data$consumer_sp %>% tolower() %>% firstup()
-intx_data$resource_sp <- intx_data$resource_sp %>% tolower() %>%firstup()
+intx_data$resource_sp <- intx_data$resource_sp %>% tolower() %>% firstup()
 
 
 
@@ -365,8 +373,8 @@ intx_inverse <- intx_inverse %>%
   left_join(impute_trait_data, by = c("consumer_sp" = "phylacine_binomial")) %>% 
   left_join(impute_trait_data, by = c("resource_sp" = "phylacine_binomial"), suffix = c("_c", "_r")) %>% 
   select(all_of(c(sp_col, outcome_col, trait_col))) %>% 
-  filter(det_vend_c != 0 | det_vect_c != 0 | det_scav_c != 0 | det_vunk_c != 0) # Will remove "consumer" specie with no evidence of being vertebrate carnivores
-
+  #filter(det_vend_c != 0 | det_vect_c != 0 | det_scav_c != 0 | det_vunk_c != 0) # Will remove "consumer" specie with no evidence of being vertebrate carnivores
+  filter(mammal_predator_c)
 
 
 # Now add these on to the intx_short

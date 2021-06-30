@@ -13,19 +13,22 @@ intx_short$consumed <- factor(intx_short$consumed)
 
 
 # Split into training and test -------------------------------------------------
+set.seed(4)
 sp_col <- c("consumer_sp", "resource_sp")
 intx_split <- intx_short %>% 
   select(-all_of(sp_col)) %>% 
-  initial_split(prop = 0.99)
+  initial_split(prop = 0.75)
 train_data <- training(intx_split) 
 test_data <- testing(intx_split)
 
+
+#train_data <- intx_short %>% select(-all_of(sp_col))
 
 # Make recipe ------------------------------------------------------------------
 
 nnet_rec <- 
   recipe(consumed ~ ., data = train_data) %>%
-  step_BoxCox(all_numeric())%>%
+  step_YeoJohnson(all_numeric())%>%
   step_normalize(all_numeric()) %>%
   prep(training = train_data, retain = TRUE)
 
@@ -43,7 +46,8 @@ train_normalized <- bake(nnet_rec, new_data = train_data, all_predictors())
 # Run model --------------------------------------------------------------------
 set.seed(4)
 nnet_fit <-
-  mlp(epochs = 200, hidden_units = 10, dropout = 0.1) %>%
+  #mlp(epochs = 461, hidden_units = 9, dropout = 0.443, activation = "elu") %>%
+  mlp(epochs = 557, hidden_units = 10, dropout = 0.778, activation = "elu") %>% # AUC = 0.886
   set_mode("classification") %>% 
   # Also set engine-specific `verbose` argument to prevent logging the results: 
   set_engine("keras", verbose = T) %>%
@@ -66,8 +70,10 @@ val_results %>% accuracy(truth = consumed, .pred_class)
 
 val_results %>% conf_mat(truth = consumed, .pred_class)
 
-caret::confusionMatrix(factor(val_results$consumed), 
+val_conf_mat <- caret::confusionMatrix(factor(val_results$consumed), 
                 factor(val_results$.pred_class))
+val_conf_mat
+BIOMOD::TSS.Stat(val_conf_mat$table)
 
 
 tr_results <-
@@ -98,6 +104,49 @@ caret::confusionMatrix(factor(tr_results$consumed),
 
 
 
+
+
+# Testing a glm
+train_data$mass_ratio <- train_data$adult_mass_g_c / train_data$adult_mass_g_r
+glm_fit <- glm(consumed ~ mass_ratio, data = train_data, family = "binomial")
+summary(glm_fit)
+
+test_data$mass_ratio <- test_data$adult_mass_g_c / test_data$adult_mass_g_r
+glm_val <- predict(glm_fit, newdata = test_data, type = "response")
+
+library("pROC")
+ModelMetrics::auc(actual = test_data$consumed, predicted = glm_val)
+glm_conf_mat <- caret::confusionMatrix(test_data$consumed, factor(ifelse(glm_val> 0.5, 1, 0), levels = c(0,1)))
+glm_conf_mat
+BIOMOD::TSS.Stat(glm_conf_mat$table)
+
+# Testing predictions based on genus
+# Note that I need to re-do the split so that I can includ the consumer and resource names
+set.seed(4)
+intx_split <- intx_short %>% 
+  initial_split(prop = 0.75)
+train_data <- training(intx_split) 
+test_data <- testing(intx_split)
+
+genus_combos <- train_data %>% 
+  filter(consumed == 1) %>% 
+  tibble(consumer_gen = word(consumer_sp, 1),
+         resource_gen = word(resource_sp, 1)) %>% 
+  select(consumer_gen, resource_gen)
+genus_combos <- paste(genus_combos$consumer_gen,
+                      genus_combos$resource_gen,
+                      sep = " x ")
+
+test_combos <- paste(word(test_data$consumer_sp, 1),
+                     word(test_data$resource_sp, 1),
+                     sep = " x ")
+
+test_data$consumed_predicted <- ifelse(test_combos %in% genus_combos, 1, 0)
+
+ModelMetrics::auc(actual = test_data$consumed, predicted = test_data$consumed_predicted)
+genus_conf_mat <- caret::confusionMatrix(test_data$consumed, factor(test_data$consumed_predicted))
+genus_conf_mat
+BIOMOD::TSS.Stat(genus_conf_mat$table)
 
 
 
@@ -298,7 +347,7 @@ for(i in cells_to_sample){
   #                               #TrophicChainsStats(ched_current)$chain.lengths %>% mean()
   #                               ) # mean_chain_length_current
   
-  print(i / 50000)
+  print(ind / length(cells_to_sample))
   
 }
 

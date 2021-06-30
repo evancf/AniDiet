@@ -142,58 +142,58 @@ past_metrics <- expand_grid(cells_with_webs, focal_years, te_samp) %>%
 # set.seed(4)
 # for(i in cells_with_webs){
 #   # Get a vector of all species that naturally occur at this cell
-#   all_sp <- rownames(m.mamm.pres.nat)[m.mamm.pres.nat[,i]] 
-#   
+#   all_sp <- rownames(m.mamm.pres.nat)[m.mamm.pres.nat[,i]]
+# 
 #   for(k in te_samp){ # Switching the indexing a little
-#     
+# 
 #     te_cell_samp <- paste("te", sample(1:99, 1), sep = ".")
-#     
+# 
 #     # Create vectors to be populated with a record of the mammal species
 #     # that went extinct in a given cell, or simulated to go extinct
 #     # under a random simulation
 #     true_extinct <- c()
 #     null_extinct <- c()
-#     
+# 
 #     for(j in rev(focal_years)){
-#       
+# 
 #       ind <- which(past_metrics$cell == i & past_metrics$focal_years == j & past_metrics$te_samp == k)
-#       
+# 
 #       # Globally extinct species by this year
 #       global_extinct_j <- te_dates$binomial[te_dates[,te_cell_samp] >= j]
-#       
+# 
 #       # Locally extant and extinct species by this year
 #       local_extant_j <- all_sp[!all_sp %in% global_extinct_j]
 #       local_extinct_j <- all_sp[all_sp %in% global_extinct_j]
-#       
+# 
 #       # Null extant species at this year (random extinctions)
 #       # Sample additional species from among those extant in the null scenario
-#       new_null_extinct <- all_sp[!all_sp %in% null_extinct] %>% 
+#       new_null_extinct <- all_sp[!all_sp %in% null_extinct] %>%
 #         sample(length(local_extinct_j) - length(null_extinct), replace = F)
-#       
+# 
 #       # Add these to the null_extinct vector, which will be updated at the next year
 #       null_extinct <- c(null_extinct, new_null_extinct)
 #       #local_extant_j_null <- all_sp %>% sample(length(local_extant_j), replace = F)
-#       
+# 
 #       # Determine if the consumer and resource are absent at the given date
 #       c_bool <-  web_pres_nat[[i]][,1] %in% local_extant_j
 #       r_bool <-  web_pres_nat[[i]][,2] %in% local_extant_j
-#       
+# 
 #       past_web <- web_pres_nat[[i]][c_bool & r_bool,]
-#       
+# 
 #       past_metrics$n_links[ind] <- past_web %>% n_links_fun()
 #       past_metrics$n_nodes[ind] <- past_web %>% n_nodes_fun()
-#       
-#       
+# 
+# 
 #       # Perform similar calculations for web with randomized extinctions
 #       c_bool_null <-  !web_pres_nat[[i]][,1] %in% null_extinct
 #       r_bool_null <-  !web_pres_nat[[i]][,2] %in% null_extinct
-#       
+# 
 #       past_web_null <- web_pres_nat[[i]][c_bool_null & r_bool_null,]
-#       
+# 
 #       past_metrics$n_links_null[ind] <- past_web_null %>% n_links_fun()
 #       past_metrics$n_nodes_null[ind] <- past_web_null %>% n_nodes_fun()
-#       
-#       
+# 
+# 
 #     }
 #   }
 #   print(round(i / tail(cells_with_webs, 1), digits = 3))
@@ -317,7 +317,7 @@ for(i in levels(prop_past_metrics$continent)){
   plot(NA, 
        #data = dat,
        xlim = (c(126000, 0) ^(1/3)),
-       ylim = c(0.350, 1), #log(c(0.05, 1)),
+       ylim = c(0.300, 1), #log(c(0.05, 1)),
        pch = 16,
        col = rgb(0,0,1,0.1),
        xlab = "",
@@ -337,25 +337,25 @@ for(i in levels(prop_past_metrics$continent)){
   if(counter == 2){
     
     text(x = 38,
-         y = 0.62,
+         y = 0.62 - 0.06,
          pos = 4,
          font = 3,
          labels = "Observed")
     arrows(x0 = 30,
            x1 = 24,
-           y0 = 0.66,
-           y1 = 0.71,
+           y0 = 0.66 - 0.06,
+           y1 = 0.71 - 0.06,
            length = 0.07)
     
     text(x = 13,
-         y = 0.94,
+         y = 0.94 - 0.02,
          pos = 4,
          font = 3,
          labels = "Null")
     arrows(x0 = 10,
            x1 = 16,
-           y0 = 0.91,
-           y1 = 0.85,
+           y0 = 0.91 - 0.02,
+           y1 = 0.85 - 0.02,
            length = 0.07)
   }
   
@@ -448,7 +448,7 @@ for(i in levels(prop_past_metrics$continent)){
   plot(NA, 
        #data = dat,
        xlim = (c(126000, 0) ^(1/3)),
-       ylim = c(0.350, 1), #log(c(0.05, 1)),
+       ylim = c(0.300, 1), #log(c(0.05, 1)),
        pch = 16,
        col = rgb(0,0,1,0.1),
        xlab = "",
@@ -536,14 +536,14 @@ for(i in levels(prop_past_metrics$continent)){
     
     
     text(x = 38000^(1/3),
-         y = 0.45,
+         y = 0.35,
          pos = 4,
          font = 3,
          labels = "Human\narrival")
     arrows(x0 = 35000^(1/3),
            x1 = 58000^(1/3),
-           y0 = 0.45 + 0.03,
-           y1 = 0.57,
+           y0 = 0.35 + 0.03,
+           y1 = 0.47,
            length = 0.07)
   }
   
