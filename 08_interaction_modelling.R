@@ -14,7 +14,7 @@ intx_short$consumed <- factor(intx_short$consumed)
 
 # Split into training and test -------------------------------------------------
 set.seed(4)
-sp_col <- c("consumer_sp", "resource_sp")
+sp_col <- c("consumer_sp", "resource_sp", "mammal_predator_c", "mammal_predator_r")
 intx_split <- intx_short %>% 
   select(-all_of(sp_col)) %>% 
   initial_split(prop = 0.75)
@@ -22,7 +22,7 @@ train_data <- training(intx_split)
 test_data <- testing(intx_split)
 
 
-#train_data <- intx_short %>% select(-all_of(sp_col))
+train_data <- intx_short %>% select(-all_of(sp_col))
 
 # Make recipe ------------------------------------------------------------------
 
@@ -45,9 +45,12 @@ train_normalized <- bake(nnet_rec, new_data = train_data, all_predictors())
 
 # Run model --------------------------------------------------------------------
 set.seed(4)
+#keras::use_session_with_seed(4)#set_random_seed(4)
+tensorflow::set_random_seed(4)
 nnet_fit <-
   #mlp(epochs = 461, hidden_units = 9, dropout = 0.443, activation = "elu") %>%
   mlp(epochs = 557, hidden_units = 10, dropout = 0.778, activation = "elu") %>% # AUC = 0.886
+  #mlp(epochs = 223, hidden_units = 6, dropout = 0.0991, activation = "elu") %>% # AUC = 0.886
   set_mode("classification") %>% 
   # Also set engine-specific `verbose` argument to prevent logging the results: 
   set_engine("keras", verbose = T) %>%
@@ -218,7 +221,6 @@ impute_trait_data$mammal_predator <- impute_trait_data$phylacine_binomial %in% m
 load("m.mamm.pres.nat.RData")
 load("m.mamm.current.RData")
 
-
 # Fix up rownames
 rownames(m.mamm.pres.nat) <- gsub("/Users/efricke/Dropbox/*Science/*Research/*SESYNC/1 Predicting interactions/Data/distribution/range maps/Phylacine 1.2.1/Ranges/Present natural/",
                                   "", 
@@ -233,9 +235,44 @@ impute_trait_data <- impute_trait_data %>%
 m.mamm.pres.nat <- m.mamm.pres.nat[rownames(m.mamm.pres.nat) %in% impute_trait_data$phylacine_binomial,]
 m.mamm.current <- m.mamm.current[rownames(m.mamm.current) %in% impute_trait_data$phylacine_binomial,]
 
-# Lastly, remove humans
-m.mamm.pres.nat <- m.mamm.pres.nat[rownames(m.mamm.pres.nat) != "Homo sapiens",]
-m.mamm.current <- m.mamm.current[rownames(m.mamm.current) != "Homo sapiens",]
+# # Lastly, remove humans # This is a decision!!!!
+# m.mamm.pres.nat <- m.mamm.pres.nat[rownames(m.mamm.pres.nat) != "Homo sapiens",]
+# m.mamm.current <- m.mamm.current[rownames(m.mamm.current) != "Homo sapiens",]
+
+# 
+m.mamm.pres.nat <- m.mamm.pres.nat[!grepl("Homo ", rownames(m.mamm.pres.nat)),]
+m.mamm.current <- m.mamm.current[!grepl("Homo ", rownames(m.mamm.current)),]
+
+
+
+
+# Also want a no vulnerable and endangered species version
+endangered_categories <- c("CR", "EN", "EP", "EW", "EX", "VU", "CR (PE)")
+# Need to pull back in COMBINE for this to reconcile names...
+temp <- tempfile()
+download.file("https://esajournals.onlinelibrary.wiley.com/action/downloadSupplement?doi=10.1002%2Fecy.3344&file=ecy3344-sup-0001-DataS1.zip",temp)
+trait_data <- read.table(unz(temp, "COMBINE_archives/trait_data_imputed.csv"), sep = ",", header = T) %>% tibble()
+unlink(temp)
+trait_data <- trait_data %>% 
+  mutate(iucn2020_binomial = word(iucn2020_binomial, 1, 2))
+iucn_categories <- read.csv("mamm.iucn.categories.csv", header = T)[,-1] %>% tibble()
+
+# Get vector of endangered species names while accounting for different names across iucn and phylacine
+endangered_spp <- c(left_join(trait_data, iucn_categories, by = c("iucn2020_binomial" = "iucn.bin")) %>%  
+                      filter(iucn.category %in% endangered_categories) %>% 
+                      select("iucn2020_binomial", "phylacine_binomial") %>%
+                      unlist(),
+                    left_join(trait_data, iucn_categories, by = c("phylacine_binomial" = "iucn.bin")) %>%  
+                      filter(iucn.category %in% endangered_categories) %>% 
+                      select("iucn2020_binomial", "phylacine_binomial") %>%
+                      unlist()) %>% 
+  unique()
+
+# Get a similar matrix for this
+m.mamm.no.endangered <- m.mamm.current[!rownames(m.mamm.current) %in% endangered_spp,]
+
+
+
 
 # Function to get all pairwise consumer / resource combination given a species list
 get_combn_df <- function(x, sp_combn = T, gen_combn = T){
@@ -278,6 +315,7 @@ i <- 20353 # Africa
 # Will save the networks in a list object
 web_pres_nat <- list()
 web_current <- list()
+web_no_endangered <- list()
 
 # For loop to make webs at every study location
 
@@ -286,6 +324,7 @@ for(i in cells_to_sample){
   
   spp_pres_nat <- rownames(m.mamm.pres.nat)[m.mamm.pres.nat[,i]]
   spp_current <- rownames(m.mamm.current)[m.mamm.current[,i]]
+  spp_no_endangered <- rownames(m.mamm.no.endangered)[m.mamm.no.endangered[,i]]
   
   # Will skip ones where there's only one species in the pixel
   if(length(spp_pres_nat) < 2 | length(spp_current) < 2) next()
@@ -293,17 +332,23 @@ for(i in cells_to_sample){
   # Get combination df
   dat_pres_nat <- get_combn_df(spp_pres_nat, sp_combn = F, gen_combn = F)
   dat_current <- get_combn_df(spp_current, sp_combn = F, gen_combn = F)
+  dat_no_endangered <- get_combn_df(spp_no_endangered, sp_combn = F, gen_combn = F)
   
   # Join with traits
   dat_pres_nat <- dat_pres_nat %>% 
     left_join(impute_trait_data, by = c("consumer_sp" = "phylacine_binomial")) %>% 
     left_join(impute_trait_data, by = c("resource_sp" = "phylacine_binomial"), suffix = c("_c", "_r")) %>% 
-    filter(mammal_predator_c)#filter(det_vend_c != 0 | det_vect_c != 0 | det_scav_c != 0 | det_vunk_c != 0)
+    filter(mammal_predator_c)
   
   dat_current <- dat_current %>% 
     left_join(impute_trait_data, by = c("consumer_sp" = "phylacine_binomial")) %>% 
     left_join(impute_trait_data, by = c("resource_sp" = "phylacine_binomial"), suffix = c("_c", "_r")) %>% 
-    filter(mammal_predator_c)#filter(det_vend_c != 0 | det_vect_c != 0 | det_scav_c != 0 | det_vunk_c != 0)
+    filter(mammal_predator_c)  
+  
+  dat_no_endangered <- dat_no_endangered %>% 
+    left_join(impute_trait_data, by = c("consumer_sp" = "phylacine_binomial")) %>% 
+    left_join(impute_trait_data, by = c("resource_sp" = "phylacine_binomial"), suffix = c("_c", "_r")) %>% 
+    filter(mammal_predator_c)
   
   # Will skip ones where there's only one species in the pixel
   if(dim(dat_pres_nat)[1] < 2 | dim(dat_current)[1] < 2) next()
@@ -311,6 +356,7 @@ for(i in cells_to_sample){
   # Make predictions
   dat_pres_nat_normalized <- bake(nnet_rec, new_data = dat_pres_nat, all_predictors())
   dat_current_normalized <- bake(nnet_rec, new_data = dat_current, all_predictors())
+  dat_no_endangered_normalized <- bake(nnet_rec, new_data = dat_no_endangered, all_predictors())
   
   dat_pres_nat <- dat_pres_nat %>%
     bind_cols(predict(nnet_fit, new_data = dat_pres_nat_normalized),
@@ -320,12 +366,17 @@ for(i in cells_to_sample){
     bind_cols(predict(nnet_fit, new_data = dat_current_normalized),
               predict(nnet_fit, new_data = dat_current_normalized, type = "prob"))
   
+  dat_no_endangered <- dat_no_endangered %>%
+    bind_cols(predict(nnet_fit, new_data = dat_no_endangered_normalized),
+              predict(nnet_fit, new_data = dat_no_endangered_normalized, type = "prob"))
+  
   if(sum(as.numeric(as.character(dat_pres_nat$.pred_class))) < 2 |
      sum(as.numeric(as.character(dat_current$.pred_class))) < 2) next()
   
   
   web_pres_nat[[i]] <- dat_pres_nat %>% filter(.pred_class == 1) %>% select("consumer_sp", "resource_sp") %>% unique()
   web_current[[i]] <- dat_current %>% filter(.pred_class == 1) %>% select("consumer_sp", "resource_sp") %>% unique()
+  web_no_endangered[[i]] <- dat_no_endangered %>% filter(.pred_class == 1) %>% select("consumer_sp", "resource_sp") %>% unique()
   
   # # Turn these into a cheddar community
   # ched_pres_nat <- Community(nodes = data.frame(node = unique(unlist(web_pres_nat[[i]]))),
@@ -352,4 +403,4 @@ for(i in cells_to_sample){
 }
 
 # Save this 
-save(web_pres_nat, web_current, file = "hindcast_webs.RData")
+save(web_pres_nat, web_current, web_no_endangered, file = "hindcast_webs.RData")
