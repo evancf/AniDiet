@@ -277,15 +277,22 @@ m.mamm.no.endangered <- m.mamm.current[!rownames(m.mamm.current) %in% endangered
 # Function to get all pairwise consumer / resource combination given a species list
 get_combn_df <- function(x, sp_combn = T, gen_combn = T){
   
-  dat <- cbind(combn(x, 2), combn(x, 2)[2:1,]) %>% t() %>% as.data.frame()
-  colnames(dat) <- c("consumer_sp", "resource_sp")
-  
-  if(sp_combn){
-    dat$sp_combn <- paste(dat$consumer_sp, dat$resource_sp)
-  }
-  
-  if(gen_combn){
-    dat$gen_combn <- paste(word(dat$consumer_sp, 1), word(dat$resource_sp, 1))
+  if(length(x) < 2){
+    
+    dat <- as.data.frame(matrix(nrow=0, ncol = 2))
+    colnames(dat) <- c("consumer_sp", "resource_sp")
+    
+  } else{
+    dat <- cbind(combn(x, 2), combn(x, 2)[2:1,]) %>% t() %>% as.data.frame()
+    colnames(dat) <- c("consumer_sp", "resource_sp")
+    
+    if(sp_combn){
+      dat$sp_combn <- paste(dat$consumer_sp, dat$resource_sp)
+    }
+    
+    if(gen_combn){
+      dat$gen_combn <- paste(word(dat$consumer_sp, 1), word(dat$resource_sp, 1))
+    }
   }
   
   dat
@@ -322,62 +329,162 @@ web_no_endangered <- list()
 for(i in cells_to_sample){
   ind <- which(cells_to_sample == i)
   
+  # Get all mammal species in the pres_nat scenario
   spp_pres_nat <- rownames(m.mamm.pres.nat)[m.mamm.pres.nat[,i]]
+  if(length(spp_pres_nat) >= 2){
+    # Get combination df
+    dat_pres_nat <- get_combn_df(spp_pres_nat, sp_combn = F, gen_combn = F)
+    # Join with traits
+    dat_pres_nat <- dat_pres_nat %>% 
+      left_join(impute_trait_data, by = c("consumer_sp" = "phylacine_binomial")) %>% 
+      left_join(impute_trait_data, by = c("resource_sp" = "phylacine_binomial"), suffix = c("_c", "_r")) %>% 
+      filter(mammal_predator_c)
+    if(dim(dat_pres_nat)[1] == 0){ # Cases where we dont have any predators
+      tmp <- as.data.frame(matrix(nrow=0, ncol = 2))
+      colnames(tmp) <- c("consumer_sp", "resource_sp")
+      web_pres_nat[[i]] <- tmp
+    } else{
+      # Make predictions
+      dat_pres_nat_normalized <- bake(nnet_rec, new_data = dat_pres_nat, all_predictors())
+      dat_pres_nat <- dat_pres_nat %>%
+        bind_cols(predict(nnet_fit, new_data = dat_pres_nat_normalized),
+                  predict(nnet_fit, new_data = dat_pres_nat_normalized, type = "prob"))
+      # Save this to output list
+      web_pres_nat[[i]] <- dat_pres_nat %>% filter(.pred_class == 1) %>% select("consumer_sp", "resource_sp") %>% unique()
+    }
+    
+  } else{ # Cases where there's only one species 
+    tmp <- as.data.frame(matrix(nrow=0, ncol = 2))
+    colnames(tmp) <- c("consumer_sp", "resource_sp")
+    web_pres_nat[[i]] <- tmp
+  }
+  
+  
+  
+  
+  
+  # Get all mammal species in the current scenario
   spp_current <- rownames(m.mamm.current)[m.mamm.current[,i]]
+  if(length(spp_current) >= 2){
+    # Get combination df
+    dat_current <- get_combn_df(spp_current, sp_combn = F, gen_combn = F)
+    # Join with traits
+    dat_current <- dat_current %>% 
+      left_join(impute_trait_data, by = c("consumer_sp" = "phylacine_binomial")) %>% 
+      left_join(impute_trait_data, by = c("resource_sp" = "phylacine_binomial"), suffix = c("_c", "_r")) %>% 
+      filter(mammal_predator_c)
+    if(dim(dat_current)[1] == 0){ # Cases where we dont have any predators
+      tmp <- as.data.frame(matrix(nrow=0, ncol = 2))
+      colnames(tmp) <- c("consumer_sp", "resource_sp")
+      web_current[[i]] <- tmp
+    } else{
+      # Make predictions
+      dat_current_normalized <- bake(nnet_rec, new_data = dat_current, all_predictors())
+      dat_current <- dat_current %>%
+        bind_cols(predict(nnet_fit, new_data = dat_current_normalized),
+                  predict(nnet_fit, new_data = dat_current_normalized, type = "prob"))
+      # Save this to output list
+      web_current[[i]] <- dat_current %>% filter(.pred_class == 1) %>% select("consumer_sp", "resource_sp") %>% unique()
+    }
+    
+  } else{ # Cases where there's only one species 
+    tmp <- as.data.frame(matrix(nrow=0, ncol = 2))
+    colnames(tmp) <- c("consumer_sp", "resource_sp")
+    web_current[[i]] <- tmp
+  }
+  
+  
+  
+  
+  # Get all mammal species in the no_endangered scenario
   spp_no_endangered <- rownames(m.mamm.no.endangered)[m.mamm.no.endangered[,i]]
-  
-  # Will skip ones where there's only one species in the pixel
-  if(length(spp_pres_nat) < 2 | length(spp_current) < 2) next()
-  
-  # Get combination df
-  dat_pres_nat <- get_combn_df(spp_pres_nat, sp_combn = F, gen_combn = F)
-  dat_current <- get_combn_df(spp_current, sp_combn = F, gen_combn = F)
-  dat_no_endangered <- get_combn_df(spp_no_endangered, sp_combn = F, gen_combn = F)
-  
-  # Join with traits
-  dat_pres_nat <- dat_pres_nat %>% 
-    left_join(impute_trait_data, by = c("consumer_sp" = "phylacine_binomial")) %>% 
-    left_join(impute_trait_data, by = c("resource_sp" = "phylacine_binomial"), suffix = c("_c", "_r")) %>% 
-    filter(mammal_predator_c)
-  
-  dat_current <- dat_current %>% 
-    left_join(impute_trait_data, by = c("consumer_sp" = "phylacine_binomial")) %>% 
-    left_join(impute_trait_data, by = c("resource_sp" = "phylacine_binomial"), suffix = c("_c", "_r")) %>% 
-    filter(mammal_predator_c)  
-  
-  dat_no_endangered <- dat_no_endangered %>% 
-    left_join(impute_trait_data, by = c("consumer_sp" = "phylacine_binomial")) %>% 
-    left_join(impute_trait_data, by = c("resource_sp" = "phylacine_binomial"), suffix = c("_c", "_r")) %>% 
-    filter(mammal_predator_c)
-  
-  # Will skip ones where there's only one species in the pixel
-  if(dim(dat_pres_nat)[1] < 2 | dim(dat_current)[1] < 2) next()
-  
-  # Make predictions
-  dat_pres_nat_normalized <- bake(nnet_rec, new_data = dat_pres_nat, all_predictors())
-  dat_current_normalized <- bake(nnet_rec, new_data = dat_current, all_predictors())
-  dat_no_endangered_normalized <- bake(nnet_rec, new_data = dat_no_endangered, all_predictors())
-  
-  dat_pres_nat <- dat_pres_nat %>%
-    bind_cols(predict(nnet_fit, new_data = dat_pres_nat_normalized),
-              predict(nnet_fit, new_data = dat_pres_nat_normalized, type = "prob"))
-  
-  dat_current <- dat_current %>%
-    bind_cols(predict(nnet_fit, new_data = dat_current_normalized),
-              predict(nnet_fit, new_data = dat_current_normalized, type = "prob"))
-  
-  dat_no_endangered <- dat_no_endangered %>%
-    bind_cols(predict(nnet_fit, new_data = dat_no_endangered_normalized),
-              predict(nnet_fit, new_data = dat_no_endangered_normalized, type = "prob"))
-  
-  if(sum(as.numeric(as.character(dat_pres_nat$.pred_class))) < 2 |
-     sum(as.numeric(as.character(dat_current$.pred_class))) < 2) next()
+  if(length(spp_no_endangered) >= 2){
+    # Get combination df
+    dat_no_endangered <- get_combn_df(spp_no_endangered, sp_combn = F, gen_combn = F)
+    # Join with traits
+    dat_no_endangered <- dat_no_endangered %>% 
+      left_join(impute_trait_data, by = c("consumer_sp" = "phylacine_binomial")) %>% 
+      left_join(impute_trait_data, by = c("resource_sp" = "phylacine_binomial"), suffix = c("_c", "_r")) %>% 
+      filter(mammal_predator_c)
+    if(dim(dat_no_endangered)[1] == 0){ # Cases where we dont have any predators
+      tmp <- as.data.frame(matrix(nrow=0, ncol = 2))
+      colnames(tmp) <- c("consumer_sp", "resource_sp")
+      web_no_endangered[[i]] <- tmp
+    } else{
+      # Make predictions
+      dat_no_endangered_normalized <- bake(nnet_rec, new_data = dat_no_endangered, all_predictors())
+      dat_no_endangered <- dat_no_endangered %>%
+        bind_cols(predict(nnet_fit, new_data = dat_no_endangered_normalized),
+                  predict(nnet_fit, new_data = dat_no_endangered_normalized, type = "prob"))
+      # Save this to output list
+      web_no_endangered[[i]] <- dat_no_endangered %>% filter(.pred_class == 1) %>% select("consumer_sp", "resource_sp") %>% unique()
+    }
+    
+  } else{ # Cases where there's only one species 
+    tmp <- as.data.frame(matrix(nrow=0, ncol = 2))
+    colnames(tmp) <- c("consumer_sp", "resource_sp")
+    web_no_endangered[[i]] <- tmp
+  }
   
   
-  web_pres_nat[[i]] <- dat_pres_nat %>% filter(.pred_class == 1) %>% select("consumer_sp", "resource_sp") %>% unique()
-  web_current[[i]] <- dat_current %>% filter(.pred_class == 1) %>% select("consumer_sp", "resource_sp") %>% unique()
-  web_no_endangered[[i]] <- dat_no_endangered %>% filter(.pred_class == 1) %>% select("consumer_sp", "resource_sp") %>% unique()
   
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  # 
+  # 
+  # spp_current <- rownames(m.mamm.current)[m.mamm.current[,i]]
+  # spp_no_endangered <- rownames(m.mamm.no.endangered)[m.mamm.no.endangered[,i]]
+  # 
+  # # Will skip ones where there's only one species in the pixel
+  # if(length(spp_pres_nat) < 2 | length(spp_current) < 2) next()
+  # 
+  # 
+  # dat_current <- get_combn_df(spp_current, sp_combn = F, gen_combn = F)
+  # dat_no_endangered <- get_combn_df(spp_no_endangered, sp_combn = F, gen_combn = F)
+  # 
+  # 
+  # 
+  # dat_current <- dat_current %>% 
+  #   left_join(impute_trait_data, by = c("consumer_sp" = "phylacine_binomial")) %>% 
+  #   left_join(impute_trait_data, by = c("resource_sp" = "phylacine_binomial"), suffix = c("_c", "_r")) %>% 
+  #   filter(mammal_predator_c)  
+  # 
+  # dat_no_endangered <- dat_no_endangered %>% 
+  #   left_join(impute_trait_data, by = c("consumer_sp" = "phylacine_binomial")) %>% 
+  #   left_join(impute_trait_data, by = c("resource_sp" = "phylacine_binomial"), suffix = c("_c", "_r")) %>% 
+  #   filter(mammal_predator_c)
+  # 
+  # # Will skip ones where there's only one species in the pixel
+  # if(dim(dat_pres_nat)[1] < 2 | dim(dat_current)[1] < 2) next()
+  # 
+  # 
+  # dat_current_normalized <- bake(nnet_rec, new_data = dat_current, all_predictors())
+  # dat_no_endangered_normalized <- bake(nnet_rec, new_data = dat_no_endangered, all_predictors())
+  # 
+  # 
+  # 
+  # dat_current <- dat_current %>%
+  #   bind_cols(predict(nnet_fit, new_data = dat_current_normalized),
+  #             predict(nnet_fit, new_data = dat_current_normalized, type = "prob"))
+  # 
+  # dat_no_endangered <- dat_no_endangered %>%
+  #   bind_cols(predict(nnet_fit, new_data = dat_no_endangered_normalized),
+  #             predict(nnet_fit, new_data = dat_no_endangered_normalized, type = "prob"))
+  # 
+  # if(sum(as.numeric(as.character(dat_pres_nat$.pred_class))) < 2 |
+  #    sum(as.numeric(as.character(dat_current$.pred_class))) < 2) next()
+  # 
+  # 
+  # web_current[[i]] <- dat_current %>% filter(.pred_class == 1) %>% select("consumer_sp", "resource_sp") %>% unique()
+  # web_no_endangered[[i]] <- dat_no_endangered %>% filter(.pred_class == 1) %>% select("consumer_sp", "resource_sp") %>% unique()
+  # 
   # # Turn these into a cheddar community
   # ched_pres_nat <- Community(nodes = data.frame(node = unique(unlist(web_pres_nat[[i]]))),
   #                            properties = list(title = 10137),

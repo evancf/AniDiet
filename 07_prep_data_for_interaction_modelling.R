@@ -245,7 +245,7 @@ carnidiet_tidy_with_zeros <- do.call(rbind, carnidiet_list)
 # This is a little clunky but will join these together
 pred_tidy_cols <- colnames(pred_tidy)
 
-intx_data <- bind_rows(pred_tidy, globi_tidy, carnidiet_tidy_with_zeros) %>% 
+intx_data <- bind_rows(pred_tidy, globi_tidy, carnidiet_tidy_with_zeros) %>%  
   select(all_of(pred_tidy_cols))
 
 
@@ -324,7 +324,7 @@ intx_tidy <- filter(intx_tidy, foraging_stratum_r != -1)
 # Couple columns where there is no variation
 cols_to_skip <- which(apply(intx_tidy, 2, function(x) length(levels(factor(x)))) == 1)
 intx_tidy <- intx_tidy %>% 
-  select(-all_of(cols_to_skip))
+  select(-all_of(cols_to_skip[!names(cols_to_skip) == "mammal_predator_c"]))
 
 
 # Keep only the columns used for analysis
@@ -373,8 +373,8 @@ intx_inverse <- intx_inverse %>%
   left_join(impute_trait_data, by = c("consumer_sp" = "phylacine_binomial")) %>% 
   left_join(impute_trait_data, by = c("resource_sp" = "phylacine_binomial"), suffix = c("_c", "_r")) %>% 
   select(all_of(c(sp_col, outcome_col, trait_col))) %>% 
-  #filter(det_vend_c != 0 | det_vect_c != 0 | det_scav_c != 0 | det_vunk_c != 0) # Will remove "consumer" specie with no evidence of being vertebrate carnivores
-  filter(mammal_predator_c)
+  filter(det_vend_c != 0 | det_vect_c != 0 | det_scav_c != 0 | det_vunk_c != 0) # Will remove "consumer" specie with no evidence of being vertebrate carnivores
+  #filter(mammal_predator_c)
 
 
 # Now add these on to the intx_short

@@ -116,15 +116,22 @@ cells_with_webs <- which(!lapply(web_pres_nat, is.null) %>% unlist())
 
 n_links_fun <- function(x) dim(x)[1]
 n_nodes_fun <- function(x) length(unique(unlist(x)))
+predator_prey_ratio_fun <- function(x) length(unique(x[,1])) / length(unique(x[,2]))
 
 
 grid_web_metrics <- tibble(cell = cells_with_webs,
                            n_links_pres_nat = lapply(web_pres_nat[cells_with_webs], n_links_fun) %>% unlist,
                            n_nodes_pres_nat = lapply(web_pres_nat[cells_with_webs], n_nodes_fun) %>% unlist,
+                           predator_prey_ratio_pres_nat = lapply(web_pres_nat[cells_with_webs], predator_prey_ratio_fun) %>% unlist,
                            #mean_chain_length_pres_nat = NA,
                            n_links_current = lapply(web_current[cells_with_webs], n_links_fun) %>% unlist,
                            n_nodes_current = lapply(web_current[cells_with_webs], n_nodes_fun) %>% unlist,
+                           predator_prey_ratio_current = lapply(web_current[cells_with_webs], predator_prey_ratio_fun) %>% unlist,
                            #mean_chain_length_current = NA
+                           n_links_no_endangered = lapply(web_no_endangered[cells_with_webs], n_links_fun) %>% unlist,
+                           n_nodes_no_endangered = lapply(web_no_endangered[cells_with_webs], n_nodes_fun) %>% unlist,
+                           predator_prey_ratio_no_endangered = lapply(web_no_endangered[cells_with_webs], predator_prey_ratio_fun) %>% unlist,
+                           #mean_chain_length_no_endangered = NA
 ) %>% as.data.frame()
 
 
@@ -137,8 +144,9 @@ te_samp <- 1 #paste("te", 1, sep = ".")
 past_metrics <- expand_grid(cells_with_webs, focal_years, te_samp) %>% 
   rename(cell = cells_with_webs) %>% 
   mutate(n_links = NA, n_nodes = NA,
-         n_links_null = NA, n_nodes_null = NA)
-
+         n_links_null = NA, n_nodes_null = NA,
+         predator_prey_ratio = NA, predator_prey_ratio_null = NA)
+# 
 # set.seed(4)
 # for(i in cells_with_webs){
 #   # Get a vector of all species that naturally occur at this cell
@@ -182,6 +190,10 @@ past_metrics <- expand_grid(cells_with_webs, focal_years, te_samp) %>%
 # 
 #       past_metrics$n_links[ind] <- past_web %>% n_links_fun()
 #       past_metrics$n_nodes[ind] <- past_web %>% n_nodes_fun()
+#       past_metrics$predator_prey_ratio[ind] <- past_web %>% predator_prey_ratio_fun()
+#       
+#       
+#       
 # 
 # 
 #       # Perform similar calculations for web with randomized extinctions
@@ -192,6 +204,7 @@ past_metrics <- expand_grid(cells_with_webs, focal_years, te_samp) %>%
 # 
 #       past_metrics$n_links_null[ind] <- past_web_null %>% n_links_fun()
 #       past_metrics$n_nodes_null[ind] <- past_web_null %>% n_nodes_fun()
+#       past_metrics$predator_prey_ratio_null[ind] <- past_web_null %>% predator_prey_ratio_fun()
 # 
 # 
 #     }
@@ -212,17 +225,19 @@ prop_past_metrics <- past_metrics %>%
          n_nodes_change = n_nodes / n_nodes_pres_nat,
          n_links_change_null = n_links_null / n_links_pres_nat,
          n_nodes_change_null = n_nodes_null / n_nodes_pres_nat) %>% 
+  dplyr::na_if("NaN") %>% 
   left_join(continent_cells)
 
 prop_past_metrics <- prop_past_metrics %>%
   group_by(cell, focal_years) %>% 
   summarise(continent = first(continent),
-            n_links_change = mean(n_links_change),
-            n_nodes_change = mean(n_nodes_change),
-            n_links_change_null = mean(n_links_change_null),
-            n_nodes_change_null = mean(n_nodes_change_null),
-            n_nodes_change_current = mean(n_nodes_current/n_nodes_pres_nat),
-            n_links_change_current = mean(n_links_current/n_links_pres_nat))
+            n_links_change = mean(n_links_change, na.rm = T),
+            n_nodes_change = mean(n_nodes_change, na.rm = T),
+            n_links_change_null = mean(n_links_change_null, na.rm = T),
+            n_nodes_change_null = mean(n_nodes_change_null, na.rm = T),
+            n_nodes_change_current = mean(n_nodes_current/n_nodes_pres_nat, na.rm = T),
+            n_links_change_current = mean(n_links_current/n_links_pres_nat, na.rm = T)) %>% 
+  dplyr::na_if("NaN")
 
 prop_past_metrics$continent <- factor(prop_past_metrics$continent, 
                                       levels = c("Africa",
@@ -270,7 +285,7 @@ node_col_poly <- rgb(117,112,179, maxColorValue = 255, alpha = 200)
 null_col <- rgb(27,158,119, maxColorValue = 255)
 null_col_poly <- rgb(27,158,119, maxColorValue = 255, alpha = 200)
 
-pdf(file = "change over time.pdf", width = 6.5, height = 5.5)
+pdf(file = "change over time.pdf", width = 7.2, height = 5.5)
 
 left_rep <- 10
 right_rep <- 10
@@ -297,6 +312,22 @@ left_col_inds <- c(1,3,5)
 focal_year_labels <- c(0, 400, 3000, 10000, 23000, 46000, 80000, 126000)
 focal_year_labels <- c(0, 400, 10000, 46000, 126000)
 
+samp_mean <- function(x,i){mean(x[i])}
+
+se_fun <- function(x, dir = "hi"){
+  if(dir == "hi"){
+    return(mean(x, na.rm = T) + sd(x, na.rm = T)/sqrt(length(x[!is.na(x)])) * 1.96)
+    #return(quantile(x, 0.025))
+    #return(boot::boot(x,samp_mean,1000)$t %>% quantile(0.975))
+  } 
+  if(dir == "lo"){
+    return(mean(x, na.rm = T) - sd(x, na.rm = T)/sqrt(length(x[!is.na(x)])) * 1.96)
+    #return(quantile(x, 0.975))
+    #return(boot::boot(x,samp_mean,1000)$t %>% quantile(0.025))
+  } 
+  
+} 
+
 for(i in levels(prop_past_metrics$continent)){
   
   dat <- prop_past_metrics %>% filter(continent == i) %>% 
@@ -314,10 +345,12 @@ for(i in levels(prop_past_metrics$continent)){
   #   par(mar = c(3.8,4,1.1,1.2))
   # }
   
+  ylo <- 0.1
+  
   plot(NA, 
        #data = dat,
        xlim = (c(126000, 0) ^(1/3)),
-       ylim = c(0.300, 1), #log(c(0.05, 1)),
+       ylim = c(ylo, 1), #log(c(0.05, 1)),
        pch = 16,
        col = rgb(0,0,1,0.1),
        xlab = "",
@@ -329,35 +362,12 @@ for(i in levels(prop_past_metrics$continent)){
   
   rect(xleft = (filter(arrival_kya, continent == i)$min * 1000)^(1/3),
        xright = (filter(arrival_kya, continent == i)$max * 1000)^(1/3),
-       ybottom = ifelse(i == "Madagascar", 0.5, 0.4),
+       ybottom = ifelse(i == "Madagascar", ylo + 0.2, ylo + 0.1),
        ytop = 1.01,
        border = F,
        col = "lightgrey")
   
-  if(counter == 2){
-    
-    text(x = 38,
-         y = 0.62 - 0.06,
-         pos = 4,
-         font = 3,
-         labels = "Observed")
-    arrows(x0 = 30,
-           x1 = 24,
-           y0 = 0.66 - 0.06,
-           y1 = 0.71 - 0.06,
-           length = 0.07)
-    
-    text(x = 13,
-         y = 0.94 - 0.02,
-         pos = 4,
-         font = 3,
-         labels = "Null")
-    arrows(x0 = 10,
-           x1 = 16,
-           y0 = 0.91 - 0.02,
-           y1 = 0.85 - 0.02,
-           length = 0.07)
-  }
+  
   
   if(i %in% c("Northamerica", "Southamerica")){
     mtext("Species", side = 1,
@@ -370,9 +380,9 @@ for(i in levels(prop_past_metrics$continent)){
   
   region_labels <- c("Africa", "Australia", NA, "Eurasia", "Madagascar",
                      "North\nAmerica", NA, "South\nAmerica")
-  text(-5, 0.45, region_labels[which(levels(prop_past_metrics$continent) ==i)], cex = 1.2, xpd = T, pos = 2)
+  text(-5, ylo + 0.1, region_labels[which(levels(prop_past_metrics$continent) ==i)], cex = 1.2, xpd = T, pos = 2)
   
-  if(counter == 2) mtext("Thousand years before present", side = 3, line = 2.75, cex = 0.9, adj = 1.5, xpd = T)
+  if(counter == 2) mtext("Thousand years before present", side = 3, line = 2.75, cex = 0.9, adj = 2, xpd = T)
   if(counter == 3) mtext("Percent change due to extinction", side = 2, line = 3.75, cex = 0.9, xpd = T)
   
   if(counter %in% bottom_row_inds){
@@ -386,43 +396,29 @@ for(i in levels(prop_past_metrics$continent)){
   }
   
   if(counter %in% left_col_inds){
-    axis(2, at = c(1, 0.8, 0.6, 0.4), #log(c(1, 0.5, 0.2, 0.05)), 
-         labels = c("0%", "-20%", "-40%", "-60%"), las = 1)
+    axis(2, at = c(1, 0.8, 0.6, 0.4, 0.2), #log(c(1, 0.5, 0.2, 0.05)), 
+         labels = c("0%", "-20%", "-40%", "-60%", "-80%"), las = 1)
   } else{
-    axis(2, at = c(1, 0.8, 0.6, 0.4), #log(c(1, 0.5, 0.2, 0.05)), 
+    axis(2, at = c(1, 0.8, 0.6, 0.4, 0.2), #log(c(1, 0.5, 0.2, 0.05)), 
          labels = NA, las = 1)
   }
   
   xx <- c(focal_years ^ (1/3))
   
-  samp_mean <- function(x,i){mean(x[i])}
-  
-  se_fun <- function(x, dir = "hi"){
-    if(dir == "hi"){
-      return(mean(x) + sd(x)/sqrt(length(x)) * 1.96)
-      #return(quantile(x, 0.025))
-      #return(boot::boot(x,samp_mean,1000)$t %>% quantile(0.975))
-    } 
-    if(dir == "lo"){
-      return(mean(x) - sd(x)/sqrt(length(x)) * 1.96)
-      #return(quantile(x, 0.975))
-      #return(boot::boot(x,samp_mean,1000)$t %>% quantile(0.025))
-    } 
-    
-  } 
-  yy1_mean <- dat %>% group_by(x) %>% summarize(mean = mean(y1)) %>% ungroup() %>% select(mean) %>% unlist()
+
+  yy1_mean <- dat %>% group_by(x) %>% summarize(mean = mean(y1, na.rm = T)) %>% ungroup() %>% select(mean) %>% unlist()
   yy1_sehi <- dat %>% group_by(x) %>% summarize(sehi = se_fun(y1, dir = "hi")) %>% ungroup() %>% select(sehi) %>% unlist()
   yy1_selo <- dat %>% group_by(x) %>% summarize(selo = se_fun(y1, dir = "lo")) %>% ungroup() %>% select(selo) %>% unlist()
   
-  yy2_mean <- dat %>% group_by(x) %>% summarize(mean = mean(y2)) %>% ungroup() %>% select(mean) %>% unlist()
+  yy2_mean <- dat %>% group_by(x) %>% summarize(mean = mean(y2, na.rm = T)) %>% ungroup() %>% select(mean) %>% unlist()
   yy2_sehi <- dat %>% group_by(x) %>% summarize(sehi = se_fun(y2, dir = "hi")) %>% ungroup() %>% select(sehi) %>% unlist()
   yy2_selo <- dat %>% group_by(x) %>% summarize(selo = se_fun(y2, dir = "lo")) %>% ungroup() %>% select(selo) %>% unlist()
   
-  yy3_mean <- dat %>% group_by(x) %>% summarize(mean = mean(y3)) %>% ungroup() %>% select(mean) %>% unlist()
+  yy3_mean <- dat %>% group_by(x) %>% summarize(mean = mean(y3, na.rm = T)) %>% ungroup() %>% select(mean) %>% unlist()
   yy3_sehi <- dat %>% group_by(x) %>% summarize(sehi = se_fun(y3, dir = "hi")) %>% ungroup() %>% select(sehi) %>% unlist()
   yy3_selo <- dat %>% group_by(x) %>% summarize(selo = se_fun(y3, dir = "lo")) %>% ungroup() %>% select(selo) %>% unlist()
   
-  yy4_mean <- dat %>% group_by(x) %>% summarize(mean = mean(y4)) %>% ungroup() %>% select(mean) %>% unlist()
+  yy4_mean <- dat %>% group_by(x) %>% summarize(mean = mean(y4, na.rm = T)) %>% ungroup() %>% select(mean) %>% unlist()
   yy4_sehi <- dat %>% group_by(x) %>% summarize(sehi = se_fun(y4, dir = "hi")) %>% ungroup() %>% select(sehi) %>% unlist()
   yy4_selo <- dat %>% group_by(x) %>% summarize(selo = se_fun(y4, dir = "lo")) %>% ungroup() %>% select(selo) %>% unlist()
   
@@ -448,7 +444,7 @@ for(i in levels(prop_past_metrics$continent)){
   plot(NA, 
        #data = dat,
        xlim = (c(126000, 0) ^(1/3)),
-       ylim = c(0.300, 1), #log(c(0.05, 1)),
+       ylim = c(ylo, 1), #log(c(0.05, 1)),
        pch = 16,
        col = rgb(0,0,1,0.1),
        xlab = "",
@@ -460,12 +456,12 @@ for(i in levels(prop_past_metrics$continent)){
        las = 1)
   
   
-  axis(2, at = c(1, 0.8, 0.6, 0.4), #log(c(1, 0.5, 0.2, 0.05)), 
+  axis(2, at = c(1, 0.8, 0.6, 0.4, 0.2), #log(c(1, 0.5, 0.2, 0.05)), 
        labels = NA, las = 1)
   
   rect(xleft = (filter(arrival_kya, continent == i)$min * 1000)^(1/3),
        xright = (filter(arrival_kya, continent == i)$max * 1000)^(1/3),
-       ybottom = 0.4,
+       ybottom = ylo + 0.1,
        ytop = 1.01,
        border = F,
        col = "lightgrey")
@@ -539,7 +535,7 @@ for(i in levels(prop_past_metrics$continent)){
          y = 0.35,
          pos = 4,
          font = 3,
-         labels = "Human\narrival")
+         labels = "H. sapiens\narrival")
     arrows(x0 = 35000^(1/3),
            x1 = 58000^(1/3),
            y0 = 0.35 + 0.03,
@@ -548,6 +544,34 @@ for(i in levels(prop_past_metrics$continent)){
   }
   
   
+  if(counter == 3){
+    
+    xxo <- 32
+    yyo <- 0.7
+    text(x = xxo,
+         y = yyo,
+         pos = 4,
+         font = 3,
+         labels = "Observed")
+    arrows(x0 = xxo - 26,
+           x1 = xxo - 30,
+           y0 = yyo + 0.02,
+           y1 = yyo + 0.09,
+           length = 0.07)
+    
+    xxn <- 20
+    yyn <- 0.94
+    text(x = xxn,
+         y = yyn,
+         pos = 4,
+         font = 3,
+         labels = "Null")
+    arrows(x0 = xxn - 13,
+           x1 = xxn - 18,
+           y0 = yyn - 0.01,
+           y1 = yyn - 0.08,
+           length = 0.07)
+  }
   
   
   # dat2 <- dat %>% filter(focal_years == 0) %>% 
@@ -596,8 +620,10 @@ dev.off()
 
 
 
-# Some data analysis ------------------------
+# Some supplementary figures ------------------------
 
+pdf(file = "Natural vs current scatterplots.pdf", width = 6.5, height = 5.5)
+par(mfrow = c(2,3))
 plot.sma.fit <- function(mod){
   curve(x*1, add = T, lty = 2, xpd = F,
         from = min(mod$data, na.rm = T),
@@ -621,33 +647,104 @@ plot.sma.fit <- function(mod){
   
 }
 
+
+scatter_cex <- 0.5
+plot(n_nodes_current ~ n_nodes_pres_nat, 
+     data = grid_web_metrics,
+     xlab = "Number of nodes (natural)",
+     ylab = "Number of nodes (current)",
+     asp = 1,
+     frame = F,
+     pch = 16,
+     cex = scatter_cex,
+     col = "grey",
+     xlim = c(0,200),
+     ylim = c(0,200))
+n_node_mod <- smatr::sma(n_nodes_current ~ n_nodes_pres_nat, 
+                         data = grid_web_metrics)
+plot.sma.fit(n_node_mod)
+
+
 plot(n_links_current ~ n_links_pres_nat, 
      data = grid_web_metrics,
-     xlab = "Number of links (present natural)",
+     xlab = "Number of links (natural)",
      ylab = "Number of links (current)",
      asp = 1,
      frame = F,
      pch = 16,
+     cex = scatter_cex,
      col = "grey",
-     xlim = c(0,1500),
-     ylim = c(0,1500))
+     xlim = c(0,700),
+     ylim = c(0,700))
 n_link_mod <- smatr::sma(n_links_current ~ n_links_pres_nat, 
                          data = grid_web_metrics)
 plot.sma.fit(n_link_mod)
 
+text(x = 600,
+     y = 615,
+     #cex = 0.75,
+     pos = 2,
+     font = 3,
+     "1:1 line")
+
+text(x = 700,
+     y = 325,
+     #cex = 0.75,
+     pos = 2,
+     font = 3,
+     "fitted\nline")
+
+
 plot(c(n_links_current/n_nodes_current) ~ c(n_links_pres_nat/n_nodes_pres_nat), 
      data = grid_web_metrics,
-     xlab = "Linkage density (present natural)",
+     xlab = "Linkage density (natural)",
      ylab = "Linkage density (current)",
      asp = 1,
      frame = F,
      pch = 16,
+     cex = scatter_cex,
      col = "lightgrey",
-     xlim = c(0,15),
-     ylim = c(0,15))
+     xlim = c(0,8),
+     ylim = c(0,8))
 link_dens_mod <- smatr::sma(c(n_links_current/n_nodes_current) ~ c(n_links_pres_nat/n_nodes_pres_nat), 
                             data = grid_web_metrics)
 plot.sma.fit(link_dens_mod)
+
+
+plot(c(n_links_current/n_nodes_current^2) ~ c(n_links_pres_nat/n_nodes_pres_nat^2), 
+     data = grid_web_metrics,
+     xlab = "Connectance (natural)",
+     ylab = "Connectance (current)",
+     asp = 1,
+     frame = F,
+     pch = 16,
+     cex = scatter_cex,
+     col = "lightgrey",
+     xlim = c(0,0.6),
+     ylim = c(0,0.6))
+connectance_mod <- smatr::sma(c(n_links_current/n_nodes_current^2) ~ c(n_links_pres_nat/n_nodes_pres_nat^2), 
+                            data = grid_web_metrics)
+plot.sma.fit(connectance_mod)
+
+
+
+plot(predator_prey_ratio_current ~ predator_prey_ratio_pres_nat, 
+     data = grid_web_metrics,
+     xlab = "Predator prey ratio (natural)",
+     ylab = "Predator prey ratio (current)",
+     asp = 1,
+     frame = F,
+     pch = 16,
+     cex = scatter_cex,
+     col = "grey",
+     xlim = c(0,4),
+     ylim = c(0,4))
+predator_prey_ratio_mod <- smatr::sma(predator_prey_ratio_current ~ predator_prey_ratio_pres_nat, 
+                         data = grid_web_metrics)
+plot.sma.fit(predator_prey_ratio_mod)
+
+dev.off()
+
 
 
 
@@ -657,10 +754,16 @@ grid_long <- left_join(tibble(cell = cell), grid_web_metrics) %>%
   mutate(x = (cell %% 360),
          y = 360 - floor(cell/360)) %>% 
   mutate(linkage_density_current = c(n_links_current/n_nodes_current),
-         linkage_density_pres_nat = c(n_links_pres_nat/n_nodes_pres_nat)) %>% 
-  mutate(delta_linkage_density = linkage_density_current / linkage_density_pres_nat,
+         linkage_density_pres_nat = c(n_links_pres_nat/n_nodes_pres_nat),
+         connectance_current = c(n_links_current/n_nodes_current^2),
+         connectance_pres_nat = c(n_links_pres_nat/n_nodes_pres_nat^2)) %>% 
+  #mutate(linkage_density_current = ifelse(is.nan(linkage_density_current), 0, linkage_density_current)) %>% 
+  #mutate(connectance_current = ifelse(is.nan(connectance_current), 0, connectance_current)) %>% 
+  mutate(delta_connectance = connectance_current / connectance_pres_nat,
+         delta_linkage_density = linkage_density_current / linkage_density_pres_nat,
          delta_nodes = n_nodes_current / n_nodes_pres_nat,
-         delta_links = n_links_current / n_links_pres_nat,) %>% 
+         delta_links = n_links_current / n_links_pres_nat,
+         delta_predator_prey_ratio = predator_prey_ratio_current / predator_prey_ratio_pres_nat) %>% 
   filter(!is.na(n_links_pres_nat))
 
 
@@ -676,35 +779,38 @@ grid_long <- left_join(tibble(cell = cell), grid_web_metrics) %>%
 
 # Reshape to get three panel
 grid_longer <- grid_long %>% 
-  pivot_longer(c(delta_linkage_density, delta_nodes, delta_links), names_to = "metric", values_to = "value")
-
-metric_names <- list(
-  "delta_linkage_density"="Linkage density",
-  "delta_links"="Links",
-  "delta_nodes"="Nodes"
-)
+  pivot_longer(c(delta_connectance, delta_linkage_density, delta_nodes, delta_links, delta_predator_prey_ratio), names_to = "metric", values_to = "value")
 
 grid_longer$metric <- factor(grid_longer$metric, levels = c("delta_nodes",
                                                             "delta_links",
-                                                            "delta_linkage_density"), 
+                                                            "delta_linkage_density",
+                                                            "delta_connectance",
+                                                            "delta_predator_prey_ratio"), 
                              labels = c("Number of species",
                                         "Number of food web links",
-                                        "Linkage density (mean links per species)"))
+                                        "Linkage density (mean links per species)",
+                                        "Connectance",
+                                        "Predator prey ratio"))
 
-pdf(file = "change maps.pdf", width = 6.5, height = 6.5)
+pdf(file = "change maps.pdf", width = 7.2, height = 4.5)
 grid_longer %>% 
   mutate(value = ifelse(value > 2, 2, value)) %>%
   mutate(value = ifelse(value < 0.25, 0.25, value)) %>%
   ggplot(aes(x, y)) +
-  geom_point(aes(colour = log(value)), size = 0.1, shape = 15) +
+  geom_point(aes(colour = log(value)), size = 0.005, shape = 15) +
   facet_wrap(vars(metric), nrow=3) +
   scale_colour_gradient2(low = "red", mid = "grey", high = "blue", midpoint = 0,
-                         name = "Percent change\n(present / natural)\n",
+                         na.value = "white",
+                         name = "Percent change\n(current / natural)\n",
                          breaks=c(log(2), log(1), log(1- 0.5), log(1 - 0.75)), 
                          labels=c(">200% gain", "0% (no change)", "50% decline", ">75% decline"),
                          limits = c(log(1 - 0.75), log(2))) +
   theme_void() +
-  coord_equal()
+  coord_equal() +
+  theme(legend.position = c(0.86, 0.04),
+        legend.justification = c(1, 0),
+        legend.key.height = unit(0.4, 'cm'),
+        legend.title = element_text(size=10))
 dev.off()
 
 
@@ -725,17 +831,17 @@ par(mar = c(1, 5, 4, 2))
 
 continent_df <- prop_past_metrics %>% filter(focal_years == 0) %>%
   group_by(continent) %>% 
-  summarize(extinction_nodes_mean = mean(n_nodes_change),
+  summarize(extinction_nodes_mean = mean(n_nodes_change, na.rm = T),
             extinction_nodes_hi = se_fun(n_nodes_change, dir = "hi"),
             extinction_nodes_lo = se_fun(n_nodes_change, dir = "lo"),
-            extinction_links_mean = mean(n_links_change),
+            extinction_links_mean = mean(n_links_change, na.rm = T),
             extinction_links_hi = se_fun(n_links_change, dir = "hi"),
             extinction_links_lo = se_fun(n_links_change, dir = "lo"),
             
-            current_nodes_mean = mean(n_nodes_change_current),
+            current_nodes_mean = mean(n_nodes_change_current, na.rm = T),
             current_nodes_hi = se_fun(n_nodes_change_current, dir = "hi"),
             current_nodes_lo = se_fun(n_nodes_change_current, dir = "lo"),
-            current_links_mean = mean(n_links_change_current),
+            current_links_mean = mean(n_links_change_current, na.rm = T),
             current_links_hi = se_fun(n_links_change_current, dir = "hi"),
             current_links_lo = se_fun(n_links_change_current, dir = "lo")) %>% 
   filter(!continent %in% c("Oceanic_main", "Caribbean") & !is.na(continent))
@@ -744,7 +850,7 @@ continent_df <- prop_past_metrics %>% filter(focal_years == 0) %>%
 xx <- seq(1, 16, length.out = 6)
 plot(NA,
      xlim = c(min(xx) - 1, max(xx) + 1),
-     ylim = c(0.2, 1),
+     ylim = c(0.0, 1),
      frame = F,
      xaxt = "n",
      yaxt = "n",
@@ -756,9 +862,9 @@ mtext("Percent change", side = 2, line = 3.5, cex = 1.2)
 region_labels <- c("Africa", "Australia","Eurasia", "Madagascar",
                    "N. America", "S. America")
 text(region_labels, x = xx-1, y = 1.02, pos = 4, srt = 45, xpd = T)
-axis(2, at = c(1, 0.8, 0.6, 0.4, 0.2), #log(c(1, 0.5, 0.2, 0.05)), 
-     labels = c("0%", "-20%", "-40%", "-60%", "-80%"), las = 1)
-seg_lwd <- 12
+axis(2, at = c(1, 0.8, 0.6, 0.4, 0.2, 0), #log(c(1, 0.5, 0.2, 0.05)), 
+     labels = c("0%", "-20%", "-40%", "-60%", "-80%", "-100%"), las = 1)
+seg_lwd <- 11
 
 x_diff <- 0.4
 segments(x0 = xx - x_diff,
@@ -823,22 +929,27 @@ arrows(x0 = xx + x_diff,
 
 segments(x0 = min(xx)-2, x1 = max(xx)+2, y0 = 1, lty = 2)
 
-points(x = c(14.5, 15.7, 15.7, 14.5),
-       y = c(0.22, 0.27, 0.22, 0.27),
+xx <- 14.5
+xxd <- 1.2
+yy <- 0.1
+yyd <- 0.06
+
+points(x = c(xx, xx + xxd, xx + xxd, xx),
+       y = c(yy, yy + yyd, yy, yy + yyd),
        pch = 15,
        col = c(node_col_poly,
                link_col,
                link_col_poly,
                node_col),
        cex = 2)
-text(c(14.5, 15.7) - 0.7,
-     0.3,
+text(c(xx, xx + xxd) - 0.7,
+     yy + yyd + 0.04,
      pos = 4, 
      srt = 45,
      labels = c("Species", "Links"),
      cex = 0.8)
-text(14.5,
-     c(0.22, 0.27),
+text(xx,
+     c(yy, yy + yyd),
      pos = 2,
      labels = c("Range change", "Extinction"),
      cex = 0.8)
@@ -852,18 +963,131 @@ dev.off()
 
 
 
+pdf(file = "endangerment maps.pdf", width = 3.5, height = 3.5)
 
 
+endangered_df <- grid_web_metrics %>% 
+  dplyr::na_if("NaN") %>% 
+  left_join(continent_cells) %>% 
+  mutate(nodes_endangered = n_nodes_no_endangered / n_nodes_current,
+         links_endangered = n_links_no_endangered / n_links_current) %>% 
+  tibble() %>% 
+  mutate(x = (cell %% 360),
+         y = 360 - floor(cell/360))
 
 
+endangered_longer <- endangered_df %>% 
+  pivot_longer(c(nodes_endangered, links_endangered), names_to = "metric", values_to = "value")
+
+endangered_longer$metric <- factor(endangered_longer$metric, levels = c("nodes_endangered",
+                                                                        "links_endangered"), 
+                                   labels = c("Number of species",
+                                              "Number of food web links"))
+
+endangered_longer %>% 
+  mutate(value = ifelse(value < 0.25, 0.25, value)) %>% 
+  ggplot(aes(x, y)) +
+  geom_point(aes(colour = log(value)), size = 0.1, shape = 15) +
+  facet_wrap(vars(metric), nrow=3) +
+  scale_colour_gradient2(low = "red", mid = "grey", high = "blue", midpoint = 0,
+                         na.value = "white",
+                         name = "Food web\nendangerment\n",
+                         breaks=c(log(1), log(1- 0.5), log(1 - 0.75)), 
+                         labels=c("0%", "50%", ">75%"),
+                         limits = c(log(1 - 0.75), log(1))) +
+  theme_void() +
+  coord_equal() +
+  theme(legend.position="bottom")
 
 
+dev.off()
 
 
+pdf(file = "endangerment bars.pdf", width = 3.5, height = 3.5)
+
+par(mar = c(4, 5, 0, 0.5))
+
+endangered_continent_df <- endangered_df %>%
+  group_by(continent) %>% 
+  summarize(extinction_nodes_mean = mean(nodes_endangered, na.rm = T),
+            extinction_nodes_hi = se_fun(nodes_endangered, dir = "hi"),
+            extinction_nodes_lo = se_fun(nodes_endangered, dir = "lo"),
+            extinction_links_mean = mean(links_endangered, na.rm = T),
+            extinction_links_hi = se_fun(links_endangered, dir = "hi"),
+            extinction_links_lo = se_fun(links_endangered, dir = "lo")) %>% 
+  filter(!continent %in% c("Oceanic_main", "Caribbean") & !is.na(continent))
 
 
+xx <- seq(1, 16, length.out = 6)
+plot(NA,
+     xlim = c(min(xx) - 1, max(xx) + 1),
+     ylim = c(1,0.1),
+     frame = F,
+     xaxt = "n",
+     yaxt = "n",
+     xlab = "",
+     ylab = "")
+mtext("Food web endangerment", side = 2, line = 3.5, cex = 1.2)
+
+#axis(3, at = xx, labels = NA)
+region_labels <- c("Africa", "Australia","Eurasia", "Madagascar",
+                   "N. America", "S. America")
+text(region_labels, x = xx+0.5, y = 1.02, pos = 2, srt = 45, xpd = T)
+axis(2, at = c(1, 0.8, 0.6, 0.4, 0.2), #log(c(1, 0.5, 0.2, 0.05)), 
+     labels = c("0%", "20%", "40%", "60%", "80%"), las = 1)
+seg_lwd <- 9
+
+x_diff <- 0.4
+segments(x0 = xx - x_diff,
+         y0 = 1,
+         y1 = endangered_continent_df$extinction_nodes_mean,
+         lend = "butt",
+         lwd = seg_lwd,
+         col = node_col)
 
 
+arrows(x0 = xx - x_diff,
+       y0 = endangered_continent_df$extinction_nodes_lo,
+       y1 = endangered_continent_df$extinction_nodes_hi,
+       angle = 90,
+       code = 3,
+       length = 0.03,
+       col = "grey")
+
+segments(x0 = xx + x_diff,
+         y0 = 1,
+         y1 = endangered_continent_df$extinction_links_mean,
+         lend = "butt",
+         lwd = seg_lwd,
+         col = link_col)
+
+
+arrows(x0 = xx + x_diff,
+       y0 = endangered_continent_df$extinction_links_lo,
+       y1 = endangered_continent_df$extinction_links_hi,
+       angle = 90,
+       code = 3,
+       length = 0.03,
+       col = "grey")
+
+
+segments(x0 = min(xx)-2, x1 = max(xx)+2, y0 = 1, lty = 2)
+xx <- 6
+yy <- 0.3
+yyd <- 0.07
+points(x = c(xx, xx),
+       y = c(yy, yy + yyd),
+       pch = 15,
+       col = c(node_col,
+               link_col),
+       cex = 2)
+text(xx,
+     c(yy, yy + yyd),
+     pos = 2,
+     labels = c("Species", "Links"),
+     cex = 0.8)
+
+dev.off()
 
 
 
