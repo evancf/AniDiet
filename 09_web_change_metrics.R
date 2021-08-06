@@ -637,6 +637,8 @@ dev.off()
 
 continent_df <- grid_long %>%
   group_by(continent) %>% 
+  mutate(abs_ec_nodes = abs_epn_nodes - abs_cpn_nodes,
+         abs_ec_links = abs_epn_links - abs_cpn_links) %>% 
   summarize(expn_nodes_mean = mean(abs_expn_nodes, na.rm = T),
             expn_nodes_hi = se_fun(abs_expn_nodes, dir = "hi"),
             expn_nodes_lo = se_fun(abs_expn_nodes, dir = "lo"),
@@ -658,9 +660,64 @@ continent_df <- grid_long %>%
             epn_nodes_lo = se_fun(abs_epn_nodes, dir = "lo"),
             epn_links_mean = mean(abs_epn_links, na.rm = T),
             epn_links_hi = se_fun(abs_epn_links, dir = "hi"),
-            epn_links_lo = se_fun(abs_epn_links, dir = "lo")) %>% 
+            epn_links_lo = se_fun(abs_epn_links, dir = "lo"),
+            
+            
+            ec_nodes_mean = mean(abs_ec_nodes, na.rm = T),
+            ec_nodes_hi = se_fun(abs_ec_nodes, dir = "hi"),
+            ec_nodes_lo = se_fun(abs_ec_nodes, dir = "lo"),
+            ec_links_mean = mean(abs_ec_links, na.rm = T),
+            ec_links_hi = se_fun(abs_ec_links, dir = "hi"),
+            ec_links_lo = se_fun(abs_ec_links, dir = "lo")) %>% 
   filter(!continent %in% c("Oceanic_main", "Caribbean") & !is.na(continent))
 
+apply(continent_df, 2, range)
+
+global_df <- grid_long %>%
+  dplyr::na_if("NaN") %>% 
+  filter(!is.na(n_nodes_pres_nat)) %>% 
+  filter(n_nodes_pres_nat > 0) %>% 
+  mutate(abs_ec_nodes = abs_epn_nodes - abs_cpn_nodes,
+         abs_ec_links = abs_epn_links - abs_cpn_links) %>% 
+  summarize(expn_nodes_mean = mean(abs_expn_nodes, na.rm = T),
+            expn_nodes_hi = se_fun(abs_expn_nodes, dir = "hi"),
+            expn_nodes_lo = se_fun(abs_expn_nodes, dir = "lo"),
+            expn_links_mean = mean(abs_expn_links, na.rm = T),
+            expn_links_hi = se_fun(abs_expn_links, dir = "hi"),
+            expn_links_lo = se_fun(abs_expn_links, dir = "lo"),
+            
+            
+            cpn_nodes_mean = mean(abs_cpn_nodes, na.rm = T),
+            cpn_nodes_hi = se_fun(abs_cpn_nodes, dir = "hi"),
+            cpn_nodes_lo = se_fun(abs_cpn_nodes, dir = "lo"),
+            cpn_links_mean = mean(abs_cpn_links, na.rm = T),
+            cpn_links_hi = se_fun(abs_cpn_links, dir = "hi"),
+            cpn_links_lo = se_fun(abs_cpn_links, dir = "lo"),
+            
+            
+            epn_nodes_mean = mean(abs_epn_nodes, na.rm = T),
+            epn_nodes_hi = se_fun(abs_epn_nodes, dir = "hi"),
+            epn_nodes_lo = se_fun(abs_epn_nodes, dir = "lo"),
+            epn_links_mean = mean(abs_epn_links, na.rm = T),
+            epn_links_hi = se_fun(abs_epn_links, dir = "hi"),
+            epn_links_lo = se_fun(abs_epn_links, dir = "lo"),
+            
+            
+            ec_nodes_mean = mean(abs_ec_nodes, na.rm = T),
+            ec_nodes_hi = se_fun(abs_ec_nodes, dir = "hi"),
+            ec_nodes_lo = se_fun(abs_ec_nodes, dir = "lo"),
+            ec_links_mean = mean(abs_ec_links, na.rm = T),
+            ec_links_hi = se_fun(abs_ec_links, dir = "hi"),
+            ec_links_lo = se_fun(abs_ec_links, dir = "lo"))
+
+global_df$expn_nodes_mean
+global_df$expn_links_mean
+
+global_df$cpn_nodes_mean
+global_df$cpn_links_mean
+
+global_df$ec_nodes_mean
+global_df$ec_links_mean
 
 
 
