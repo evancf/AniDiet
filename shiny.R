@@ -110,7 +110,7 @@ spp[i]
 
 
 # Write out data for shiny
-save(spp, cell_coords, web_current, web_pres_nat, file = "global_food_webs_data.RData")
+save(spp, cell_coords, web_current, web_pres_nat, web_no_endangered, file = "global_food_webs_data.RData")
 
 
 
