@@ -93,8 +93,10 @@ tr_results %>% accuracy(truth = consumed, .pred_class)
 
 tr_results %>% conf_mat(truth = consumed, .pred_class)
 
-caret::confusionMatrix(factor(tr_results$consumed), 
+tr_conf_mat <- caret::confusionMatrix(factor(tr_results$consumed), 
                        factor(tr_results$.pred_class))
+tr_conf_mat
+BIOMOD::TSS.Stat(tr_conf_mat$table)
 
 
 # # Not easy to save this model... These dont work
@@ -119,7 +121,9 @@ glm_val <- predict(glm_fit, newdata = test_data, type = "response")
 
 library("pROC")
 ModelMetrics::auc(actual = test_data$consumed, predicted = glm_val)
-glm_conf_mat <- caret::confusionMatrix(test_data$consumed, factor(ifelse(glm_val> 0.5, 1, 0), levels = c(0,1)))
+set.seed(4)
+# Note that I will make estimates probabalistically since no predicted value is greater than 0.5
+glm_conf_mat <- caret::confusionMatrix(test_data$consumed, factor(rbinom(length(glm_val), 1, prob = glm_val), levels = c(0,1)))
 glm_conf_mat
 BIOMOD::TSS.Stat(glm_conf_mat$table)
 

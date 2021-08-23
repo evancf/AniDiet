@@ -46,6 +46,74 @@ spp <- unlist(unlist(web_pres_nat)) %>% unique() %>% sort()
 
 
 
+# Copying some from 08_interaction_modelling here to get list of mammal predators and extinct species --------
+
+# Load trait data
+impute_trait_data <- read.csv("impute_trait_data.csv")[,-1] %>% tibble()
+
+
+# Diversion to get list of primarily carnivorous species 
+# First, pull potential mammals from carnidiet
+potential_mammals <- RCurl::getURL("https://raw.githubusercontent.com/osmiddleton/CarniDIET-Database/master/Version%201.0/Supplementary%20data/Potential%20species%20list.csv") %>% 
+  read.csv(text = .) %>% tibble()
+
+# Need to also get this for extinct species
+# (NOTE that this code is replicated in '09_web_change_metrics.R')
+te_dates <- read.table("Andermann/global_pyrate_species_list.txt", header = T) %>% tibble() %>% 
+  bind_cols(read.table("Andermann/global_ts_te_dates.txt", header = T) %>% tibble())
+
+te_dates <- te_dates %>% 
+  mutate(binomial = paste(id, taxon, sep = " ")) %>% 
+  dplyr::select(-starts_with("ts"))
+
+te_dates <- te_dates %>% filter(status == "extinct")
+
+# Need to reconcile names
+te_dates$binomial[!te_dates$binomial %in% impute_trait_data$phylacine_binomial]
+
+filter(impute_trait_data, word(phylacine_binomial,1) == "Tapirus") %>% select(phylacine_binomial, iucn2020_binomial)
+filter(impute_trait_data, word(phylacine_binomial,1) == "copei") %>% select(phylacine_binomial, iucn2020_binomial)
+filter(impute_trait_data, word(phylacine_binomial,1) == "Cervalces") %>% select(phylacine_binomial, iucn2020_binomial)
+
+filter(te_dates, word(binomial,1) == "Tapirus") %>% select(binomial)
+
+te_dates$binomial <- plyr::revalue(te_dates$binomial, 
+                                   c("Alces scotti" = "Cervalces scotti",
+                                     "Candiacervus SpII" = "Candiacervus spII",
+                                     #"Caprini indet" = "",
+                                     "Dicroceros sp" = "Dicroceros spA",
+                                     "Geocapromys SP_A" = "Geocapromys spA",
+                                     #"HexolobodontinaeGen_NOW Sp_NOW" = "",
+                                     "Homo denisovans" = "Homo spDenisova",
+                                     #"Hydrodamalis gigas" = "",
+                                     "Megaoryzomys Sp_Now" = "Megaoryzomys spA",
+                                     #"Neomonachus tropicalis" = "",
+                                     "Nesophontes SP_A" = "Nesophontes spA",
+                                     "Nesoryzomys Sp_B" = "Nesoryzomys spB",
+                                     "Nesoryzomys Sp_C" = "Nesoryzomys spC",
+                                     "Nesoryzomys Sp_D" = "Nesoryzomys spD",
+                                     "Nothrotheriops shastense" = "Nothrotheriops shastensis",
+                                     "Pachyarmaterium brasiliense" = "Pachyarmatherium brasiliense",
+                                     "Peroryctes SP_NOW" = "Peroryctes spA",
+                                     #"Peroryctinae GEN_NOW" = "",
+                                     "Tapirus copei" = "Tapirus merriami",
+                                     "Valgipes deformis" = "Valgipes bucklandi"#,
+                                     #"Zalophus japonicus" = ""
+                                   ))
+
+mammal_predator <- c(gsub("_"," ",potential_mammals$Bin.),
+                     impute_trait_data %>% 
+                       filter(phylacine_binomial %in% 
+                                te_dates$binomial & dphy_vertebrate > 50) %>% 
+                       pull(phylacine_binomial))
+
+
+# 
+
+mammal_predator <- sort(mammal_predator) %>% unique()
+
+extinct_spp <- te_dates$binomial %>% sort()
+
 
 
 # Get wikipedia images -------------
@@ -107,10 +175,64 @@ spp[i]
 # https://cran.r-project.org/web/packages/magick/vignettes/intro.html
 
 
+# Want to get common names wherever possible
+
+# spp_common <- rep(NA, length(spp))
+# # Putting this in a for loop because this takes forever and sometimes breaks
+# last_ind <- 1
+# for(i in last_ind:length(spp_common)){#10){#
+#   spp_common[i] <- taxize::sci2comm(spp[i], db = "itis")
+# }
+# last_ind <-  spp_common %>% 
+#   lapply(., function(x) x[1][[1]]) %>% 
+#   unlist() %>% 
+#   is.na() %>% 
+#   `!` %>% 
+#   which() %>% 
+#   tail(1)
+# 
+# common_names <- tibble(spp = spp,
+#                         spp_common = spp_common1)
+# write.csv(common_names, file = "common_names.csv", row.names = F)
+
+# common_names <- read.csv("common_names.csv") %>% tibble()
+# 
+# 
+# for(i in which(is.na(common_names$spp_common))){
+#   common_names$spp_common[i] <- taxize::sci2comm(taxize::get_uid(common_names$spp[i])) %>% 
+#     lapply(., function(x) x[1][[1]]) %>% 
+#     unlist()
+# }
+
+#write.csv(common_names, file = "common_names.csv", row.names = F)
+
+common_names <- read.csv("common_names.csv") %>% tibble()
 
 
 # Write out data for shiny
-save(spp, cell_coords, web_current, web_pres_nat, web_no_endangered, file = "global_food_webs_data.RData")
+save(spp, 
+     mammal_predator, 
+     extinct_spp, 
+     common_names,
+     cell_coords, 
+     web_current, web_pres_nat, web_no_endangered, file = "global_food_webs_data.RData")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

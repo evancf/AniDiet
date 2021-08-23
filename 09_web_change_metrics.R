@@ -950,31 +950,81 @@ degree_mean <- degree_mean %>%
 
 degree_mean$extinct <- factor(degree_mean$extinct, levels = c("Extinct", "Extant"))
 
+# 
+# p1 <- degree_mean %>% 
+#   ggplot(aes(degree_mean, fill = extinct, color = extinct)) +
+#   geom_density(alpha = 0.1, adjust = 1.5) +
+#   scale_x_log10() + 
+#   theme_classic() +
+#   xlab("Species degree") +
+#   ylab("Density") +
+#   theme(legend.position = c(0.7, 0.6)) +
+#   labs(fill='', color = '') +
+#   theme(plot.margin = unit(c(0.4,0.4,0.4,0.4), "cm")) +
+#   annotate(geom="text", x=1, y=3.4, label="a", fontface = 2)
+# 
+# p2 <- degree_mean %>% 
+#   filter(extinct != "Extinct") %>% 
+#   ggplot(aes(degree_mean, fill = endangered, color = endangered)) +
+#   geom_density(alpha = 0.1, adjust = 1.5) +
+#   scale_x_log10() +
+#   theme_classic() +
+#   xlab("Species degree") +
+#   ylab("Density") +
+#   theme(legend.position = c(0.7, 0.6)) +
+#   labs(fill='', color = '')  +
+#   theme(plot.margin = unit(c(0.4,0.4,0.4,0.4), "cm")) +
+#   annotate(geom="text", x=1, y=4.1, label="c", fontface = 2)
+# 
+# set.seed(44)
+# p3 <- degree_mean %>% 
+#   filter(extinct != "Extinct") %>% 
+#   ggplot(aes((range_change - 1) * -100, degree_mean)) +
+#   scale_y_log10() +
+#   #geom_point() +
+#   geom_jitter(width = 2, height = 0.05, color = "grey", size = 0.5) +
+#   theme_classic() +
+#   geom_smooth(method = lm) +
+#   xlim(0, 100) +
+#   xlab("Percent range loss") +
+#   ylab("Species degree") +
+#   theme(plot.margin = unit(c(0.4,0.4,0.4,0.4), "cm")) +
+#   annotate(geom="text", x=0, y=120, label="b", fontface = 2)
+# 
+# pdf(file = "degree plots.pdf", width = 7.2, height = 2.5)
+# gridExtra::grid.arrange(p1, p3, p2, nrow = 1)
+# dev.off()
+
+xx <- 0.5
 
 p1 <- degree_mean %>% 
-  ggplot(aes(degree_mean, fill = extinct, color = extinct)) +
-  geom_density(alpha = 0.1, adjust = 1.5) +
-  scale_x_log10() + 
+  ggplot(aes(y = degree_mean, x = extinct, fill = extinct, color = extinct)) +
+  scale_y_log10() + 
+  geom_violin(alpha = 0.1) +
   theme_classic() +
-  xlab("Species degree") +
-  ylab("Density") +
-  theme(legend.position = c(0.7, 0.6)) +
-  labs(fill='', color = '') +
+  ylab("Species degree") +
+  xlab("") +
+  xlim("Extant", "Extinct") +
+  theme(legend.position = "none") +
   theme(plot.margin = unit(c(0.4,0.4,0.4,0.4), "cm")) +
-  annotate(geom="text", x=1, y=3.4, label="a", fontface = 2)
+  annotate(geom="text", x = xx, y=100, label="a", fontface = 2)
+
 
 p2 <- degree_mean %>% 
   filter(extinct != "Extinct") %>% 
-  ggplot(aes(degree_mean, fill = endangered, color = endangered)) +
-  geom_density(alpha = 0.1, adjust = 1.5) +
-  scale_x_log10() +
+  ggplot(aes(y = degree_mean, x = endangered, fill = endangered, color = endangered)) +
+  scale_y_log10() + 
+  geom_violin(alpha = 0.1) +  
+  # scale_x_discrete("endangered",
+  #                  labels = c("Not endangered" = "Not\nendangered",
+  #                             "Endangered" = "Endangered")) +
   theme_classic() +
-  xlab("Species degree") +
-  ylab("Density") +
-  theme(legend.position = c(0.7, 0.6)) +
-  labs(fill='', color = '')  +
+  ylab("") +
+  xlab("") +
+  xlim("Not endangered", "Endangered") +
+  theme(legend.position = "none") +
   theme(plot.margin = unit(c(0.4,0.4,0.4,0.4), "cm")) +
-  annotate(geom="text", x=1, y=4.1, label="c", fontface = 2)
+  annotate(geom="text", x = xx, y=100, label="c", fontface = 2)
 
 set.seed(44)
 p3 <- degree_mean %>% 
@@ -982,12 +1032,12 @@ p3 <- degree_mean %>%
   ggplot(aes((range_change - 1) * -100, degree_mean)) +
   scale_y_log10() +
   #geom_point() +
-  geom_jitter(width = 2, height = 0.05, color = "grey", size = 0.5) +
+  geom_jitter(width = 2, height = 0.05, color = rgb(0,0,0, 0.1), size = 0.5) +
   theme_classic() +
-  geom_smooth(method = lm) +
+  geom_smooth(method = lm, se = F) +
   xlim(0, 100) +
   xlab("Percent range loss") +
-  ylab("Species degree") +
+  ylab("") +
   theme(plot.margin = unit(c(0.4,0.4,0.4,0.4), "cm")) +
   annotate(geom="text", x=0, y=120, label="b", fontface = 2)
 
