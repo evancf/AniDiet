@@ -536,6 +536,12 @@ for(i in levels(prop_past_metrics$continent)){
 dev.off()
 
 
+# Want to calculate how much less link loss would occur had species declined randomly
+dd <- 1 - prop_past_metrics %>% filter(focal_years == 0) %>% 
+  select(n_links_change:n_nodes_change_null) %>% 
+  colMeans(na.rm=T)
+1 - dd[4] / dd[2] # links
+1 - dd[5] / dd[3]
 
 
 # Percent decline attribution ---------------------------

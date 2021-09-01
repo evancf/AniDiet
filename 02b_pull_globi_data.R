@@ -1,3 +1,7 @@
+# This script pulls diet data from the Global Biotic Interactions dataset
+# More information here: https://www.sciencedirect.com/science/article/pii/S1574954114001125
+# https://www.globalbioticinteractions.org/
+
 # install.packages("rglobi")
 library("rglobi")
 library("tidyverse")
@@ -6,7 +10,6 @@ mam_checklist <- read.csv("mam_checklist.csv")[,-1] %>% tibble()
 pred_tidy <- read.csv("pred_tidy.csv")[,-1] %>% tibble()
 
 mp <- mam_checklist %>% 
-  #filter(mammal_predator == 1) %>% 
   select(species) %>% 
   unlist() %>% sort() %>% unique()
 

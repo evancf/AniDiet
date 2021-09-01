@@ -1,3 +1,4 @@
+# This script pulls diet data from our new assembly of literature data.
 #install.packages("googlesheets4")
 library("googlesheets4")
 library("tidyverse")

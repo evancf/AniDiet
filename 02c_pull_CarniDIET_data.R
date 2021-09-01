@@ -1,3 +1,7 @@
+# This script pulls diet data from the CarniDIET database
+# https://onlinelibrary.wiley.com/doi/abs/10.1111/geb.13296
+# https://datadryad.org/stash/dataset/doi:10.5061/dryad.2v6wwpzmr
+
 library('tidyverse')
 library("RCurl")
 
