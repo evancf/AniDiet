@@ -1,7 +1,7 @@
 library("tidyverse")
 
 
-# 
+# These data are accessible here: https://www.science.org/doi/10.1126/sciadv.abb2313
 africa_cells <- raster::raster("Andermann/continent_shapes/raster_africa.tif")
 africa_cells <- tibble(cell = which(raster::values(africa_cells) == 1),
                     continent = "africa")
@@ -40,17 +40,17 @@ continent_cells <- continent_cells %>%
 
 # Load hindcast webs ------------------------------
 
-load("hindcast_webs.RData")
+load("data/hindcast_webs.RData")
 
 
 # Load trait data ------------------------------
 
-impute_trait_data <- read.csv("impute_trait_data.csv")[,-1] %>% tibble()
+impute_trait_data <- read.csv("data/impute_trait_data.csv")[,-1] %>% tibble()
 
 
 # Load matrix of mammal presence ------------------------------
 
-load("m.mamm.pres.nat.RData")
+load("data/m.mamm.pres.nat.RData")
 rownames(m.mamm.pres.nat) <- rownames(m.mamm.pres.nat) %>% basename(.)
 
 
@@ -213,9 +213,9 @@ past_metrics <- expand_grid(cells_with_webs, focal_years, te_samp) %>%
 # }
 # 
 # 
-# write.csv(file = "past_metrics.csv", past_metrics)
+# write.csv(file = "data/past_metrics.csv", past_metrics)
 
-past_metrics <- read.csv(file = "past_metrics.csv")[,-1]
+past_metrics <- read.csv(file = "data/past_metrics.csv")[,-1]
 
 # Left join to pres_nat values
 
@@ -914,7 +914,7 @@ degree_mean <- degree_df %>%
   summarize(degree_mean = mean(degree))
 
 # Get estimates of range change
-load("m.mamm.current.RData")
+load("data/m.mamm.current.RData")
 range_change <- rowSums(m.mamm.current) / rowSums(m.mamm.pres.nat) %>% as.data.frame()
 range_change$binomial <- rownames(range_change)
 colnames(range_change) <- c("range_change", "binomial")
@@ -931,7 +931,7 @@ trait_data <- read.table(unz(temp, "COMBINE_archives/trait_data_imputed.csv"), s
 unlink(temp)
 trait_data <- trait_data %>% 
   mutate(iucn2020_binomial = word(iucn2020_binomial, 1, 2))
-iucn_categories <- read.csv("mamm.iucn.categories.csv", header = T)[,-1] %>% tibble()
+iucn_categories <- read.csv("data/mamm.iucn.categories.csv", header = T)[,-1] %>% tibble()
 
 # Get vector of endangered species names while accounting for different names across iucn and phylacine
 endangered_spp <- c(left_join(trait_data, iucn_categories, by = c("iucn2020_binomial" = "iucn.bin")) %>%  

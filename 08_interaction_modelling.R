@@ -8,7 +8,7 @@ library("bipartite")
 
 
 # Read in data -----------------------------------------------------------------
-intx_short <- read.csv("intx_short.csv")[,-1] %>% tibble()
+intx_short <- read.csv("data/intx_short.csv")[,-1] %>% tibble()
 intx_short$consumed <- factor(intx_short$consumed)
 
 
@@ -22,8 +22,6 @@ train_data <- training(intx_split)
 test_data <- testing(intx_split)
 
 
-train_data <- intx_short %>% select(-all_of(sp_col))
-
 # Make recipe ------------------------------------------------------------------
 
 nnet_rec <- 
@@ -32,53 +30,27 @@ nnet_rec <-
   step_normalize(all_numeric()) %>%
   prep(training = train_data, retain = TRUE)
 
-
-# For validation:
-val_normalized <- bake(nnet_rec, new_data = test_data, all_predictors())
-
-# For testing when we arrive at a final model: 
-test_normalized <- bake(nnet_rec, new_data = test_data, all_predictors())
-
 # For looking at model predicted vs observed training data
 train_normalized <- bake(nnet_rec, new_data = train_data, all_predictors())
+test_normalized <- bake(nnet_rec, new_data = test_data, all_predictors())
 
 
 # Run model --------------------------------------------------------------------
+# Here we are using tuned parameters
 set.seed(4)
-#keras::use_session_with_seed(4)#set_random_seed(4)
 tensorflow::set_random_seed(4)
 nnet_fit <-
-  #mlp(epochs = 461, hidden_units = 9, dropout = 0.443, activation = "elu") %>%
-  mlp(epochs = 557, hidden_units = 10, dropout = 0.778, activation = "elu") %>% # AUC = 0.886
-  #mlp(epochs = 223, hidden_units = 6, dropout = 0.0991, activation = "elu") %>% # AUC = 0.886
+  mlp(epochs = 557, hidden_units = 10, dropout = 0.778, activation = "elu") %>%
   set_mode("classification") %>% 
-  # Also set engine-specific `verbose` argument to prevent logging the results: 
   set_engine("keras", verbose = T) %>%
   fit(consumed ~ ., data = bake(nnet_rec, new_data = NULL))
 
 nnet_fit
 
 
-# Model validation  ------------------------------------------------------------
-val_results <- 
-  test_data %>%
-  bind_cols(
-    predict(nnet_fit, new_data = val_normalized),
-    predict(nnet_fit, new_data = val_normalized, type = "prob"))
-#val_results
+# Model performance  -----------------------------------------------------------
 
-val_results %>% roc_auc(truth = consumed, .pred_0)
-
-val_results %>% accuracy(truth = consumed, .pred_class)
-
-val_results %>% conf_mat(truth = consumed, .pred_class)
-
-val_conf_mat <- caret::confusionMatrix(factor(val_results$consumed), 
-                factor(val_results$.pred_class))
-val_conf_mat
-BIOMOD::TSS.Stat(val_conf_mat$table)
-
-
+# Multi-trait deep learning model
 tr_results <-
   train_data %>%
   bind_cols(
@@ -99,19 +71,28 @@ tr_conf_mat
 BIOMOD::TSS.Stat(tr_conf_mat$table)
 
 
-# # Not easy to save this model... These dont work
-# # Save tidymodel -------------------------------------------------------------
-# # nnet_fit_parsed <- parse_model(nnet_fit)
-# # write_yaml(nnet_fit, "nnet_fit_parsed.yml")
-# #save(list = c("nnet_rec", "nnet_fit"), file = "intx_tidymodel.RData")
-# #saveRDS(nnet_fit, file = "nnet_fit.RDS")
-# nnet_fit %>% save_model_tf("nnet_fit")
+test_results <-
+  test_data %>%
+  bind_cols(
+    predict(nnet_fit, new_data = test_normalized),
+    predict(nnet_fit, new_data = test_normalized, type = "prob")
+  )
+test_results
+
+test_results %>% roc_auc(truth = consumed, .pred_0)
+
+test_results %>% accuracy(truth = consumed, .pred_class)
+
+test_results %>% conf_mat(truth = consumed, .pred_class)
+
+test_conf_mat <- caret::confusionMatrix(factor(test_results$consumed), 
+                                      factor(test_results$.pred_class))
+test_conf_mat
+BIOMOD::TSS.Stat(test_conf_mat$table)
 
 
 
-
-
-# Testing a glm
+# Testing performance for a trait matching logistic regression using body mass ratio
 train_data$mass_ratio <- train_data$adult_mass_g_c / train_data$adult_mass_g_r
 glm_fit <- glm(consumed ~ mass_ratio, data = train_data, family = "binomial")
 summary(glm_fit)
@@ -127,8 +108,8 @@ glm_conf_mat <- caret::confusionMatrix(test_data$consumed, factor(rbinom(length(
 glm_conf_mat
 BIOMOD::TSS.Stat(glm_conf_mat$table)
 
-# Testing predictions based on genus
-# Note that I need to re-do the split so that I can includ the consumer and resource names
+# Testing performance of genus-level phylogenetic model
+# Note that I need to re-do the split so that I can include the consumer and resource names
 set.seed(4)
 intx_split <- intx_short %>% 
   initial_split(prop = 0.75)
@@ -156,11 +137,47 @@ genus_conf_mat
 BIOMOD::TSS.Stat(genus_conf_mat$table)
 
 
+# Finalized model ---------------------------------------------------------------
 
-# Make world wide web predictions ------------------------------
+# Will fit the finalized model using all the data here
+train_data <- intx_short %>% select(-all_of(sp_col))
+train_normalized <- bake(nnet_rec, new_data = train_data, all_predictors())
 
-# Load trait data
-impute_trait_data <- read.csv("impute_trait_data.csv")[,-1] %>% tibble()
+set.seed(4)
+tensorflow::set_random_seed(4)
+nnet_fit <-
+  mlp(epochs = 557, hidden_units = 10, dropout = 0.778, activation = "elu") %>%
+  set_mode("classification") %>% 
+  set_engine("keras", verbose = T) %>%
+  fit(consumed ~ ., data = bake(nnet_rec, new_data = NULL))
+
+nnet_fit
+
+tr_results <-
+  train_data %>%
+  bind_cols(
+    predict(nnet_fit, new_data = train_normalized),
+    predict(nnet_fit, new_data = train_normalized, type = "prob")
+  )
+tr_results
+
+tr_results %>% roc_auc(truth = consumed, .pred_0)
+
+tr_results %>% accuracy(truth = consumed, .pred_class)
+
+tr_results %>% conf_mat(truth = consumed, .pred_class)
+
+tr_conf_mat <- caret::confusionMatrix(factor(tr_results$consumed), 
+                                      factor(tr_results$.pred_class))
+tr_conf_mat
+BIOMOD::TSS.Stat(tr_conf_mat$table)
+
+
+
+# Make world wide web predictions ----------------------------------------------
+
+# Load trait data (Need to run 07_prep_data_for_interaction_modelling to get this)
+impute_trait_data <- read.csv("data/impute_trait_data.csv")[,-1] %>% tibble()
 
 
 # Diversion to get list of primarily carnivorous species 
@@ -221,9 +238,9 @@ mammal_predator <- c(gsub("_"," ",potential_mammals$Bin.),
 impute_trait_data$mammal_predator <- impute_trait_data$phylacine_binomial %in% mammal_predator
 
 
-# Load matrix of mammal presence
-load("m.mamm.pres.nat.RData")
-load("m.mamm.current.RData")
+# Load matrix of mammal presence - these are PHYLACINE data, slightly reformatted
+load("data/m.mamm.pres.nat.RData")
+load("data/m.mamm.current.RData")
 
 # Fix up rownames
 rownames(m.mamm.pres.nat) <- gsub("/Users/efricke/Dropbox/*Science/*Research/*SESYNC/1 Predicting interactions/Data/distribution/range maps/Phylacine 1.2.1/Ranges/Present natural/",
@@ -239,11 +256,7 @@ impute_trait_data <- impute_trait_data %>%
 m.mamm.pres.nat <- m.mamm.pres.nat[rownames(m.mamm.pres.nat) %in% impute_trait_data$phylacine_binomial,]
 m.mamm.current <- m.mamm.current[rownames(m.mamm.current) %in% impute_trait_data$phylacine_binomial,]
 
-# # Lastly, remove humans # This is a decision!!!!
-# m.mamm.pres.nat <- m.mamm.pres.nat[rownames(m.mamm.pres.nat) != "Homo sapiens",]
-# m.mamm.current <- m.mamm.current[rownames(m.mamm.current) != "Homo sapiens",]
-
-# 
+# # Lastly, remove humans 
 m.mamm.pres.nat <- m.mamm.pres.nat[!grepl("Homo ", rownames(m.mamm.pres.nat)),]
 m.mamm.current <- m.mamm.current[!grepl("Homo ", rownames(m.mamm.current)),]
 
@@ -259,7 +272,7 @@ trait_data <- read.table(unz(temp, "COMBINE_archives/trait_data_imputed.csv"), s
 unlink(temp)
 trait_data <- trait_data %>% 
   mutate(iucn2020_binomial = word(iucn2020_binomial, 1, 2))
-iucn_categories <- read.csv("mamm.iucn.categories.csv", header = T)[,-1] %>% tibble()
+iucn_categories <- read.csv("data/mamm.iucn.categories.csv", header = T)[,-1] %>% tibble()
 
 # Get vector of endangered species names while accounting for different names across iucn and phylacine
 endangered_spp <- c(left_join(trait_data, iucn_categories, by = c("iucn2020_binomial" = "iucn.bin")) %>%  
@@ -364,9 +377,6 @@ for(i in cells_to_sample){
   }
   
   
-  
-  
-  
   # Get all mammal species in the current scenario
   spp_current <- rownames(m.mamm.current)[m.mamm.current[,i]]
   if(length(spp_current) >= 2){
@@ -430,88 +440,9 @@ for(i in cells_to_sample){
     web_no_endangered[[i]] <- tmp
   }
   
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  # 
-  # 
-  # spp_current <- rownames(m.mamm.current)[m.mamm.current[,i]]
-  # spp_no_endangered <- rownames(m.mamm.no.endangered)[m.mamm.no.endangered[,i]]
-  # 
-  # # Will skip ones where there's only one species in the pixel
-  # if(length(spp_pres_nat) < 2 | length(spp_current) < 2) next()
-  # 
-  # 
-  # dat_current <- get_combn_df(spp_current, sp_combn = F, gen_combn = F)
-  # dat_no_endangered <- get_combn_df(spp_no_endangered, sp_combn = F, gen_combn = F)
-  # 
-  # 
-  # 
-  # dat_current <- dat_current %>% 
-  #   left_join(impute_trait_data, by = c("consumer_sp" = "phylacine_binomial")) %>% 
-  #   left_join(impute_trait_data, by = c("resource_sp" = "phylacine_binomial"), suffix = c("_c", "_r")) %>% 
-  #   filter(mammal_predator_c)  
-  # 
-  # dat_no_endangered <- dat_no_endangered %>% 
-  #   left_join(impute_trait_data, by = c("consumer_sp" = "phylacine_binomial")) %>% 
-  #   left_join(impute_trait_data, by = c("resource_sp" = "phylacine_binomial"), suffix = c("_c", "_r")) %>% 
-  #   filter(mammal_predator_c)
-  # 
-  # # Will skip ones where there's only one species in the pixel
-  # if(dim(dat_pres_nat)[1] < 2 | dim(dat_current)[1] < 2) next()
-  # 
-  # 
-  # dat_current_normalized <- bake(nnet_rec, new_data = dat_current, all_predictors())
-  # dat_no_endangered_normalized <- bake(nnet_rec, new_data = dat_no_endangered, all_predictors())
-  # 
-  # 
-  # 
-  # dat_current <- dat_current %>%
-  #   bind_cols(predict(nnet_fit, new_data = dat_current_normalized),
-  #             predict(nnet_fit, new_data = dat_current_normalized, type = "prob"))
-  # 
-  # dat_no_endangered <- dat_no_endangered %>%
-  #   bind_cols(predict(nnet_fit, new_data = dat_no_endangered_normalized),
-  #             predict(nnet_fit, new_data = dat_no_endangered_normalized, type = "prob"))
-  # 
-  # if(sum(as.numeric(as.character(dat_pres_nat$.pred_class))) < 2 |
-  #    sum(as.numeric(as.character(dat_current$.pred_class))) < 2) next()
-  # 
-  # 
-  # web_current[[i]] <- dat_current %>% filter(.pred_class == 1) %>% select("consumer_sp", "resource_sp") %>% unique()
-  # web_no_endangered[[i]] <- dat_no_endangered %>% filter(.pred_class == 1) %>% select("consumer_sp", "resource_sp") %>% unique()
-  # 
-  # # Turn these into a cheddar community
-  # ched_pres_nat <- Community(nodes = data.frame(node = unique(unlist(web_pres_nat[[i]]))),
-  #                            properties = list(title = 10137),
-  #                            trophic.links = web_pres_nat[[i]] %>% rename(consumer = consumer_sp,
-  #                                                          resource = resource_sp))
-  # ched_current <- Community(nodes = data.frame(node = unique(unlist(web_current[[i]]))),
-  #                            properties = list(title = 10137),
-  #                            trophic.links = web_current[[i]] %>% rename(consumer = consumer_sp,
-  #                                                                         resource = resource_sp))
-  # 
-  # 
-  # 
-  # grid_web_metrics[ind,-1] <- c(ched_pres_nat %>% NumberOfTrophicLinks(), # n_links_pres_nat
-  #                               ched_pres_nat %>% NumberOfNodes(), # n_nodes_pres_nat
-  #                               #TrophicChainsStats(ched_pres_nat)$chain.lengths %>% mean(), # mean_chain_length_pres_nat
-  #                               ched_current %>% NumberOfTrophicLinks(), # n_links_current
-  #                               ched_current %>% NumberOfNodes()#, # n_nodes_current
-  #                               #TrophicChainsStats(ched_current)$chain.lengths %>% mean()
-  #                               ) # mean_chain_length_current
-  
   print(ind / length(cells_to_sample))
   
 }
 
 # Save this 
-save(web_pres_nat, web_current, web_no_endangered, file = "hindcast_webs.RData")
+save(web_pres_nat, web_current, web_no_endangered, file = "data/hindcast_webs.RData")
