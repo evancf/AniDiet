@@ -1,5 +1,6 @@
 library("tidyverse")
 
+# Load raster data for region-level analyses ------------------------------
 
 # These data are accessible here: https://www.science.org/doi/10.1126/sciadv.abb2313
 africa_cells <- raster::raster("Andermann/continent_shapes/raster_africa.tif")
@@ -27,7 +28,7 @@ southamerica_cells <- raster::raster("Andermann/continent_shapes/raster_southame
 southamerica_cells <- tibble(cell = which(raster::values(southamerica_cells) == 1),
                           continent = "southamerica")
 
-# Put these together
+# Put these together to make. This associates cell number with region 
 continent_cells <- bind_rows(africa_cells, australia_cells, caribbean_cells,
                              eurasia_cells, madagascar_cells, northamerica_cells,
                              oceanic_main_cells, southamerica_cells)
@@ -74,17 +75,14 @@ filter(impute_trait_data, word(phylacine_binomial,1) == "Cervalces") %>% select(
 
 filter(te_dates, word(binomial,1) == "Tapirus") %>% select(binomial)
 
+# A few naming things to reconcile
 te_dates$binomial <- plyr::revalue(te_dates$binomial, 
                                    c("Alces scotti" = "Cervalces scotti",
                                      "Candiacervus SpII" = "Candiacervus spII",
-                                     #"Caprini indet" = "",
                                      "Dicroceros sp" = "Dicroceros spA",
                                      "Geocapromys SP_A" = "Geocapromys spA",
-                                     #"HexolobodontinaeGen_NOW Sp_NOW" = "",
                                      "Homo denisovans" = "Homo spDenisova",
-                                     #"Hydrodamalis gigas" = "",
                                      "Megaoryzomys Sp_Now" = "Megaoryzomys spA",
-                                     #"Neomonachus tropicalis" = "",
                                      "Nesophontes SP_A" = "Nesophontes spA",
                                      "Nesoryzomys Sp_B" = "Nesoryzomys spB",
                                      "Nesoryzomys Sp_C" = "Nesoryzomys spC",
@@ -92,20 +90,15 @@ te_dates$binomial <- plyr::revalue(te_dates$binomial,
                                      "Nothrotheriops shastense" = "Nothrotheriops shastensis",
                                      "Pachyarmaterium brasiliense" = "Pachyarmatherium brasiliense",
                                      "Peroryctes SP_NOW" = "Peroryctes spA",
-                                     #"Peroryctinae GEN_NOW" = "",
                                      "Tapirus copei" = "Tapirus merriami",
-                                     "Valgipes deformis" = "Valgipes bucklandi"#,
-                                     #"Zalophus japonicus" = ""
+                                     "Valgipes deformis" = "Valgipes bucklandi"
                                    ))
 
 
 # Decide on some relevant focal years (rather than every year)
 
-(seq(0, (126000)^(1/3), length.out = 20))^3
 focal_years <- c(0, 400, 3000, 10000, 23000, 46000, 80000, 126000)
 focal_years <- (seq(0, (126000)^(1/3), length.out = 40))^3 %>% round()
-
-#plot(y = rep(1, length(focal_years)), x = (focal_years ^ (1/3)))
 
 
 # Get metrics for the cells for which we were actually able to get networks.

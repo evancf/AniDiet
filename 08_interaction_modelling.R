@@ -197,25 +197,13 @@ te_dates <- te_dates %>%
 te_dates <- te_dates %>% filter(status == "extinct")
 
 # Need to reconcile names
-te_dates$binomial[!te_dates$binomial %in% impute_trait_data$phylacine_binomial]
-
-filter(impute_trait_data, word(phylacine_binomial,1) == "Tapirus") %>% select(phylacine_binomial, iucn2020_binomial)
-filter(impute_trait_data, word(phylacine_binomial,1) == "copei") %>% select(phylacine_binomial, iucn2020_binomial)
-filter(impute_trait_data, word(phylacine_binomial,1) == "Cervalces") %>% select(phylacine_binomial, iucn2020_binomial)
-
-filter(te_dates, word(binomial,1) == "Tapirus") %>% select(binomial)
-
 te_dates$binomial <- plyr::revalue(te_dates$binomial, 
                                    c("Alces scotti" = "Cervalces scotti",
                                      "Candiacervus SpII" = "Candiacervus spII",
-                                     #"Caprini indet" = "",
                                      "Dicroceros sp" = "Dicroceros spA",
                                      "Geocapromys SP_A" = "Geocapromys spA",
-                                     #"HexolobodontinaeGen_NOW Sp_NOW" = "",
                                      "Homo denisovans" = "Homo spDenisova",
-                                     #"Hydrodamalis gigas" = "",
                                      "Megaoryzomys Sp_Now" = "Megaoryzomys spA",
-                                     #"Neomonachus tropicalis" = "",
                                      "Nesophontes SP_A" = "Nesophontes spA",
                                      "Nesoryzomys Sp_B" = "Nesoryzomys spB",
                                      "Nesoryzomys Sp_C" = "Nesoryzomys spC",
@@ -223,10 +211,8 @@ te_dates$binomial <- plyr::revalue(te_dates$binomial,
                                      "Nothrotheriops shastense" = "Nothrotheriops shastensis",
                                      "Pachyarmaterium brasiliense" = "Pachyarmatherium brasiliense",
                                      "Peroryctes SP_NOW" = "Peroryctes spA",
-                                     #"Peroryctinae GEN_NOW" = "",
                                      "Tapirus copei" = "Tapirus merriami",
-                                     "Valgipes deformis" = "Valgipes bucklandi"#,
-                                     #"Zalophus japonicus" = ""
+                                     "Valgipes deformis" = "Valgipes bucklandi"
                                    ))
 
 mammal_predator <- c(gsub("_"," ",potential_mammals$Bin.),
