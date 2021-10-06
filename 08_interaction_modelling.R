@@ -40,7 +40,8 @@ test_normalized <- bake(nnet_rec, new_data = test_data, all_predictors())
 set.seed(4)
 tensorflow::set_random_seed(4)
 nnet_fit <-
-  mlp(epochs = 557, hidden_units = 10, dropout = 0.778, activation = "elu") %>%
+  #mlp(epochs = 557, hidden_units = 10, dropout = 0.778, activation = "elu") %>%
+  mlp(epochs = 223, hidden_units = 6, dropout = 0.0991, activation = "elu") %>%
   set_mode("classification") %>% 
   set_engine("keras", verbose = T) %>%
   fit(consumed ~ ., data = bake(nnet_rec, new_data = NULL))
@@ -146,7 +147,8 @@ train_normalized <- bake(nnet_rec, new_data = train_data, all_predictors())
 set.seed(4)
 tensorflow::set_random_seed(4)
 nnet_fit <-
-  mlp(epochs = 557, hidden_units = 10, dropout = 0.778, activation = "elu") %>%
+  #mlp(epochs = 557, hidden_units = 10, dropout = 0.778, activation = "elu") %>%
+  mlp(epochs = 223, hidden_units = 6, dropout = 0.0991, activation = "elu") %>%
   set_mode("classification") %>% 
   set_engine("keras", verbose = T) %>%
   fit(consumed ~ ., data = bake(nnet_rec, new_data = NULL))
