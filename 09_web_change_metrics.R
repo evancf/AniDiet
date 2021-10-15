@@ -545,20 +545,39 @@ dev.off()
 
 
 # Want to calculate how much less link loss would occur had species declined randomly
-# Comparing randomized extinction to the global average effect of all observed 
+# "Comparing randomized extinction to the global average effect of all observed 
 # extinctions, randomized extinction resulted in X% fewer links lost and X% 
-# fewer species lost from food webs
+# fewer species lost from food webs"
 dd <- 1 - prop_past_metrics %>% filter(focal_years == 0) %>% 
   select(n_links_change:n_nodes_change_null) %>% 
   colMeans(na.rm=T)
-1 - dd[4] / dd[2] # links
-1 - dd[5] / dd[3]
 
 dd[2] / dd[4]
 dd[3] / dd[5]
 
+# Could also frame this in the inverse sense (how many less there would be if
+# it were random)
+1 - dd[4] / dd[2] # links
+1 - dd[5] / dd[3]
+
+
+
 
 # Percent decline attribution ---------------------------
+
+# For the following section, the scenarios are coded this way
+
+# pn: present natural - the counterfactual scenario of species composition as
+# it would occur today had defaunation / introductions not occurred
+
+# ex: extinction only scenario. Had extinctions occured, but extant species
+# still filled their natural range
+
+# c: current. Species composition as it occurs today, with ranges affected
+# by defaunation and species introductions
+
+# e: endangered species extinction scenario. This represents the current
+# scenario, but with all vulnerable and endangered species extinct
 
 cell <- 1:(142*360) %>% rev()
 grid_rel <- left_join(tibble(cell = cell), grid_web_metrics) %>% 
@@ -589,15 +608,7 @@ grid_rel <- grid_rel %>%
          abs_ec_nodes = (n_nodes_no_endangered - n_nodes_current) / n_nodes_current,
          abs_ec_links = (n_links_no_endangered - n_links_current) / n_links_current,
          abs_ec_ld = ((n_links_no_endangered/n_nodes_no_endangered) - (n_links_current/n_nodes_current)) / (n_links_current/n_nodes_current),
-  ) %>% 
-  # Also want difference in decline
-  mutate(diff_cex_nodes = abs_cex_nodes - abs_expn_nodes,
-         diff_cex_links =  abs_cex_links - abs_expn_links,
-         diff_cex_ld = abs_cex_ld - abs_expn_ld,
-         
-         diff_ec_nodes = abs_ec_nodes - abs_cex_nodes,
-         diff_ec_links = abs_ec_links - abs_cex_links,
-         diff_ec_ld = abs_ec_ld - abs_cex_ld)
+  )
 
 
 # Reshape to get three panel
@@ -650,6 +661,71 @@ grid_rel_longer %>%
   )
 dev.off()
 
+
+
+continent_rel_df <- grid_rel %>%
+  group_by(continent) %>% 
+  summarize(expn_nodes_mean = mean(abs_expn_nodes, na.rm = T),
+            expn_nodes_hi = se_fun(abs_expn_nodes, dir = "hi"),
+            expn_nodes_lo = se_fun(abs_expn_nodes, dir = "lo"),
+            expn_links_mean = mean(abs_expn_links, na.rm = T),
+            expn_links_hi = se_fun(abs_expn_links, dir = "hi"),
+            expn_links_lo = se_fun(abs_expn_links, dir = "lo"),
+            
+            
+            cex_nodes_mean = mean(abs_cex_nodes, na.rm = T),
+            cex_nodes_hi = se_fun(abs_cex_nodes, dir = "hi"),
+            cex_nodes_lo = se_fun(abs_cex_nodes, dir = "lo"),
+            cex_links_mean = mean(abs_cex_links, na.rm = T),
+            cex_links_hi = se_fun(abs_cex_links, dir = "hi"),
+            cex_links_lo = se_fun(abs_cex_links, dir = "lo"),
+            
+            
+            ec_nodes_mean = mean(abs_ec_nodes, na.rm = T),
+            ec_nodes_hi = se_fun(abs_ec_nodes, dir = "hi"),
+            ec_nodes_lo = se_fun(abs_ec_nodes, dir = "lo"),
+            ec_links_mean = mean(abs_ec_links, na.rm = T),
+            ec_links_hi = se_fun(abs_ec_links, dir = "hi"),
+            ec_links_lo = se_fun(abs_ec_links, dir = "lo")) %>% 
+  filter(!continent %in% c("Oceanic_main", "Caribbean") & !is.na(continent))
+
+range(continent_rel_df$cex_nodes_mean)
+range(continent_rel_df$cex_links_mean)
+
+range(continent_rel_df$ec_nodes_mean)
+range(continent_rel_df$ec_links_mean)
+
+
+grid_rel %>%
+  dplyr::na_if("NaN") %>% 
+  filter(n_nodes_pres_nat > 0) %>% 
+  summarize(expn_nodes_mean = mean(abs_expn_nodes, na.rm = T),
+            expn_nodes_hi = se_fun(abs_expn_nodes, dir = "hi"),
+            expn_nodes_lo = se_fun(abs_expn_nodes, dir = "lo"),
+            expn_links_mean = mean(abs_expn_links, na.rm = T),
+            expn_links_hi = se_fun(abs_expn_links, dir = "hi"),
+            expn_links_lo = se_fun(abs_expn_links, dir = "lo"))
+
+
+grid_rel %>%   
+  dplyr::na_if("NaN") %>% 
+  filter(n_nodes_extinct_only > 0) %>% 
+  summarize(cex_nodes_mean = mean(abs_cex_nodes, na.rm = T),
+            cex_nodes_hi = se_fun(abs_cex_nodes, dir = "hi"),
+            cex_nodes_lo = se_fun(abs_cex_nodes, dir = "lo"),
+            cex_links_mean = mean(abs_cex_links, na.rm = T),
+            cex_links_hi = se_fun(abs_cex_links, dir = "hi"),
+            cex_links_lo = se_fun(abs_cex_links, dir = "lo"))
+            
+grid_rel %>%     
+  summarize(ec_nodes_mean = mean(abs_ec_nodes, na.rm = T),
+            ec_nodes_hi = se_fun(abs_ec_nodes, dir = "hi"),
+            ec_nodes_lo = se_fun(abs_ec_nodes, dir = "lo"),
+            ec_links_mean = mean(abs_ec_links, na.rm = T),
+            ec_links_hi = se_fun(abs_ec_links, dir = "hi"),
+            ec_links_lo = se_fun(abs_ec_links, dir = "lo"))
+
+
 # Percent decline attribution ---------------------------
 
 cell <- 1:(142*360) %>% rev()
@@ -677,70 +753,10 @@ grid_long <- grid_long %>%
          abs_cpn_links = (n_links_current - n_links_pres_nat) / n_links_pres_nat,
          abs_cpn_ld = ((n_links_current/n_nodes_current) - (n_links_pres_nat/n_nodes_pres_nat)) / (n_links_pres_nat/n_nodes_pres_nat),
          
-         
          abs_epn_nodes = (n_nodes_no_endangered - n_nodes_pres_nat) / n_nodes_pres_nat,
          abs_epn_links = (n_links_no_endangered - n_links_pres_nat) / n_links_pres_nat,
          abs_epn_ld = ((n_links_no_endangered/n_nodes_no_endangered) - (n_links_pres_nat/n_nodes_pres_nat)) / (n_links_pres_nat/n_nodes_pres_nat),
-  ) %>% 
-  # Also want difference in decline
-  mutate(diff_cex_nodes = abs_cpn_nodes - abs_expn_nodes,
-         diff_cex_links =  abs_cpn_links - abs_expn_links,
-         diff_cex_ld = abs_cpn_ld - abs_expn_ld,
-         
-         diff_ec_nodes = abs_epn_nodes - abs_cpn_nodes,
-         diff_ec_links = abs_epn_links - abs_cpn_links,
-         diff_ec_ld = abs_epn_ld - abs_cpn_ld)
-
-
-# Reshape to get three panel
-grid_longer <- grid_long %>% 
-  select(cell, continent,
-         abs_expn_nodes, abs_expn_links, abs_expn_ld,
-         diff_cex_nodes, diff_cex_links, diff_cex_ld,
-         diff_ec_nodes, diff_ec_links, diff_ec_ld) %>% 
-  pivot_longer(c(abs_expn_nodes, abs_expn_links, abs_expn_ld,
-                 diff_cex_nodes, diff_cex_links, diff_cex_ld,
-                 diff_ec_nodes, diff_ec_links, diff_ec_ld), 
-               names_to = "metric", 
-               values_to = "value") %>% 
-  dplyr::na_if("NaN")  %>% 
-  mutate(x = (cell %% 360),
-         y = 360 - floor(cell/360))
-
-grid_longer$metric <- factor(grid_longer$metric, 
-                             levels = c("abs_expn_nodes", "abs_expn_links", "abs_expn_ld",
-                                        "diff_cex_nodes", "diff_cex_links", "diff_cex_ld",
-                                        "diff_ec_nodes", "diff_ec_links", "diff_ec_ld"), 
-                             labels = c("Extinction: Species", "Extinction: Links", "Extinction: Linkage Density",
-                                        "Range Change: Species", "Range Change: Links", "Range Change: Linkage Density",
-                                        "Endangerment: Species", "Endangerment: Links", "Endangerment: Linkage Density"))
-
-
-pdf(file = "figures/change maps.pdf", width = 4.25, height = 2.75)
-grid_longer %>% 
-  mutate(value = ifelse(value > 1, 1, value)) %>%
-  mutate(value = ifelse(value < -0.75, -0.75, value)) %>%
-  mutate(value = value + 1) %>% 
-  ggplot(aes(x, y)) +
-  geom_point(aes(colour = log(value)), size = 0.005, shape = 15) +
-  facet_wrap(vars(metric), nrow=3) +
-  scale_colour_gradient2(low = "red", mid = "grey", high = "blue", midpoint = 0,
-                         na.value = "white",
-                         name = "Percent\nchange\n                  \n\n",
-                         breaks=c(log(2), log(1), log(1- 0.5), log(1 - 0.75)), 
-                         labels=c(">100%\ngain", "0%\n(no change)", "50%\ndecline", ">75%\ndecline"),
-                         limits = c(log(1 - 0.75), log(2))) +
-  theme_void() +
-  coord_equal() +
-  theme(
-    strip.background = element_blank(),
-    strip.text.x = element_blank(),
-    legend.position = "bottom",
-    legend.key.width = unit(1.3, 'cm'),
-    legend.key.height = unit(0.15, 'cm'),
-    panel.spacing = unit(-0.2, "lines")
   )
-dev.off()
 
 
 
@@ -749,8 +765,6 @@ dev.off()
 
 continent_df <- grid_long %>%
   group_by(continent) %>% 
-  mutate(abs_ec_nodes = abs_epn_nodes - abs_cpn_nodes,
-         abs_ec_links = abs_epn_links - abs_cpn_links) %>% 
   summarize(expn_nodes_mean = mean(abs_expn_nodes, na.rm = T),
             expn_nodes_hi = se_fun(abs_expn_nodes, dir = "hi"),
             expn_nodes_lo = se_fun(abs_expn_nodes, dir = "lo"),
@@ -772,15 +786,7 @@ continent_df <- grid_long %>%
             epn_nodes_lo = se_fun(abs_epn_nodes, dir = "lo"),
             epn_links_mean = mean(abs_epn_links, na.rm = T),
             epn_links_hi = se_fun(abs_epn_links, dir = "hi"),
-            epn_links_lo = se_fun(abs_epn_links, dir = "lo"),
-            
-            
-            ec_nodes_mean = mean(abs_ec_nodes, na.rm = T),
-            ec_nodes_hi = se_fun(abs_ec_nodes, dir = "hi"),
-            ec_nodes_lo = se_fun(abs_ec_nodes, dir = "lo"),
-            ec_links_mean = mean(abs_ec_links, na.rm = T),
-            ec_links_hi = se_fun(abs_ec_links, dir = "hi"),
-            ec_links_lo = se_fun(abs_ec_links, dir = "lo")) %>% 
+            epn_links_lo = se_fun(abs_epn_links, dir = "lo")) %>% 
   filter(!continent %in% c("Oceanic_main", "Caribbean") & !is.na(continent))
 
 apply(continent_df, 2, range)
@@ -788,15 +794,11 @@ apply(continent_df, 2, range)
 range(continent_df$cpn_nodes_mean)
 range(continent_df$cpn_links_mean)
 
-range(continent_df$ec_nodes_mean)
-range(continent_df$ec_links_mean)
 
 global_df <- grid_long %>%
   dplyr::na_if("NaN") %>% 
   filter(!is.na(n_nodes_pres_nat)) %>% 
   filter(n_nodes_pres_nat > 0) %>% 
-  mutate(abs_ec_nodes = abs_epn_nodes - abs_cpn_nodes,
-         abs_ec_links = abs_epn_links - abs_cpn_links) %>% 
   summarize(expn_nodes_mean = mean(abs_expn_nodes, na.rm = T),
             expn_nodes_hi = se_fun(abs_expn_nodes, dir = "hi"),
             expn_nodes_lo = se_fun(abs_expn_nodes, dir = "lo"),
@@ -818,24 +820,13 @@ global_df <- grid_long %>%
             epn_nodes_lo = se_fun(abs_epn_nodes, dir = "lo"),
             epn_links_mean = mean(abs_epn_links, na.rm = T),
             epn_links_hi = se_fun(abs_epn_links, dir = "hi"),
-            epn_links_lo = se_fun(abs_epn_links, dir = "lo"),
-            
-            
-            ec_nodes_mean = mean(abs_ec_nodes, na.rm = T),
-            ec_nodes_hi = se_fun(abs_ec_nodes, dir = "hi"),
-            ec_nodes_lo = se_fun(abs_ec_nodes, dir = "lo"),
-            ec_links_mean = mean(abs_ec_links, na.rm = T),
-            ec_links_hi = se_fun(abs_ec_links, dir = "hi"),
-            ec_links_lo = se_fun(abs_ec_links, dir = "lo"))
+            epn_links_lo = se_fun(abs_epn_links, dir = "lo"))
 
 global_df$expn_nodes_mean
 global_df$expn_links_mean
 
 global_df$cpn_nodes_mean
 global_df$cpn_links_mean
-
-global_df$ec_nodes_mean
-global_df$ec_links_mean
 
 
 

@@ -6,7 +6,7 @@ library("tidyverse")
 # about 20 minutes or so to run, so we will just pull in from a saved csv if possible,
 # although you'll have to run through this first on your computer
 
-if(!"impute_trait_data.csv" %in% list.files()){
+if(!"data/impute_trait_data.csv" %in% list.files(recursive = T)){
   # Get the COMBINE dataset for traits https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/ecy.3344
   temp <- tempfile()
   download.file("https://esajournals.onlinelibrary.wiley.com/action/downloadSupplement?doi=10.1002%2Fecy.3344&file=ecy3344-sup-0001-DataS1.zip",temp)
@@ -141,7 +141,7 @@ if(!"impute_trait_data.csv" %in% list.files()){
   
 }
 
-impute_trait_data <- read.csv("impute_trait_data.csv")[,-1] %>% tibble()
+impute_trait_data <- read.csv("data/impute_trait_data.csv")[,-1] %>% tibble()
 
 # Diversion to get list of primarily carnivorous species 
 potential_mammals <- RCurl::getURL("https://raw.githubusercontent.com/osmiddleton/CarniDIET-Database/master/Version%201.0/Supplementary%20data/Potential%20species%20list.csv") %>% 
@@ -155,14 +155,44 @@ impute_trait_data$mammal_predator <- impute_trait_data$phylacine_binomial %in% m
 # Load interaction data -------------------------
 
 #
-pred_tidy <- read.csv("pred_tidy.csv")[,-1] %>% tibble()
-globi_tidy <- read.csv("globi_tidy.csv")[,-1] %>% tibble()
+pred_tidy <- read.csv("data/pred_tidy.csv")[,-1] %>% tibble()
+globi_tidy <- read.csv("data/globi_tidy.csv")[,-1] %>% tibble()
 source("02c_pull_CarniDiet_data.R")
+
+
+# First, we will get a sense for species-level coverage.
+binomials <- c(impute_trait_data$phylacine_binomial, 
+               impute_trait_data$iucn2020_binomial)
+
+pred_tidy_bins <- c(word(pred_tidy$consumer_sp, 1, 2), 
+                    word(pred_tidy$resource_sp, 1, 2))
+
+globi_tidy_bins <- c(word(globi_tidy$consumer_sp, 1, 2), 
+                     word(globi_tidy$resource_sp, 1, 2))
+
+carnidiet_tidy_bins <- c(word(carnidiet_tidy$consumer_sp, 1, 2), 
+                         word(carnidiet_tidy$resource_sp, 1, 2))
+
+
+pred_tidy_bins[pred_tidy_bins %in% binomials] %>% unique() %>% length()
+
+globi_tidy_bins[globi_tidy_bins %in% binomials] %>% unique() %>% length()
+
+carnidiet_tidy_bins[carnidiet_tidy_bins %in% binomials] %>% unique() %>% length()
+
+
+c(pred_tidy_bins[pred_tidy_bins %in% binomials],
+  globi_tidy_bins[globi_tidy_bins %in% binomials],
+  carnidiet_tidy_bins[carnidiet_tidy_bins %in% binomials]) %>% 
+  unique() %>% length()
+
+
+
 
 # For the carniDIET data, we know exact locations. Based on the IUCN
 # range maps, we will see which animal species are there
 
-load("mamm.presence.by.carnicoords.wide.RData")
+load("data/mamm.presence.by.carnicoords.wide.RData")
 
 mamm.presence.by.carnicoords.wide <- mamm.presence.by.carnicoords.wide %>% 
   filter(!is.na(binomial)) %>% 
