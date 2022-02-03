@@ -1055,9 +1055,11 @@ degree_mean <- degree_mean %>%
   left_join(select(te_dates, binomial, te)) %>% 
   left_join(range_change) %>% 
   mutate(extinct = ifelse(is.na(te), "Extant", "Extinct")) %>% 
-  mutate(endangered = ifelse(binomial %in% endangered_spp, "Endangered", "Not endangered"))
+  mutate(endangered = ifelse(binomial %in% endangered_spp, "Endangered", "Not endangered")) %>% 
+  mutate(range_binary = ifelse(range_change < 0.9, "Range loss >10%", "Range loss <10%"))
 
 degree_mean$extinct <- factor(degree_mean$extinct, levels = c("Extinct", "Extant"))
+degree_mean$range_binary <- factor(degree_mean$range_binary, levels = c("Range loss >10%", "Range loss <10%"))
 
 # 
 # p1 <- degree_mean %>% 
@@ -1111,7 +1113,7 @@ p1 <- degree_mean %>%
   scale_y_log10() + 
   geom_violin(alpha = 0.1) +
   theme_classic() +
-  ylab("Species degree") +
+  ylab("Number of links\n(species average)") +
   xlab("") +
   xlim("Extant", "Extinct") +
   theme(legend.position = "none") +
@@ -1138,17 +1140,16 @@ p2 <- degree_mean %>%
 set.seed(44)
 p3 <- degree_mean %>% 
   filter(extinct != "Extinct") %>% 
-  ggplot(aes((range_change - 1) * -100, degree_mean)) +
-  scale_y_log10() +
-  #geom_point() +
-  geom_jitter(width = 2, height = 0.05, color = rgb(0,0,0, 0.1), size = 0.5) +
+  ggplot(aes(y = degree_mean, x = range_binary, fill = range_binary, color = range_binary)) +
+  scale_y_log10() + 
+  geom_violin(alpha = 0.1) +  
   theme_classic() +
-  geom_smooth(method = lm, se = F) +
-  xlim(0, 100) +
-  xlab("Percent range loss") +
   ylab("") +
+  xlab("") +
+  xlim("Range loss <10%", "Range loss >10%") +
+  theme(legend.position = "none") +
   theme(plot.margin = unit(c(0.4,0.4,0.4,0.4), "cm")) +
-  annotate(geom="text", x=0, y=120, label="b", fontface = 2)
+  annotate(geom="text", x = xx, y=100, label="c", fontface = 2)
 
 pdf(file = "figures/degree plots.pdf", width = 7.2, height = 2.5)
 gridExtra::grid.arrange(p1, p3, p2, nrow = 1)
@@ -1161,436 +1162,13 @@ extinction_degree_mod <- lm(log(degree_mean) ~ extinct, data = degree_mean)
 summary(extinction_degree_mod)
 exp(coef(extinction_degree_mod)[1]) / exp(coef(extinction_degree_mod)[1] + coef(extinction_degree_mod)[2])
 
-range_change_degree_mod <- lm(log(degree_mean) ~ range_change, data = filter(degree_mean, extinct != "Extinct"))
+range_change_degree_mod <- lm(log(degree_mean) ~ range_binary, data = filter(degree_mean, extinct != "Extinct"))
 summary(range_change_degree_mod)
 exp(coef(range_change_degree_mod)[1]) / exp(coef(range_change_degree_mod)[1] + coef(range_change_degree_mod)[2])
 
 endangered_degree_mod <- lm(log(degree_mean) ~ endangered, data = filter(degree_mean, extinct != "Extinct"))
 summary(endangered_degree_mod)
 exp(coef(endangered_degree_mod)[1]) / exp(coef(endangered_degree_mod)[1] + coef(endangered_degree_mod)[2])
-
-
-
-
-
-
-#
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# # I THINK THIS IS ALL OBSOLETE
-# 
-# # Want to get a tibble with change (delta) between 4 categories
-# # c = current # pn = present natural # ex = extinctions alone # e = endangered species extinction
-# cell <- 1:(142*360) %>% rev()
-# grid_long <- left_join(tibble(cell = cell), grid_web_metrics) %>% 
-#   mutate(delta_cpn_nodes = n_nodes_current / n_nodes_pres_nat,
-#          delta_cpn_links = n_links_current / n_links_pres_nat,
-#          delta_epn_nodes = n_nodes_no_endangered / n_nodes_pres_nat,
-#          delta_epn_links = n_links_no_endangered / n_links_pres_nat,
-#          delta_ec_nodes = n_nodes_no_endangered / n_nodes_current,
-#          delta_ec_links = n_links_no_endangered / n_links_current) %>% 
-#   filter(!is.na(n_links_pres_nat)) 
-# 
-# 
-# # Want to also have an estimate for just the change attributable to extinction alone
-# grid_long_extinction_only <- prop_past_metrics %>% 
-#   filter(focal_years == 0) %>% 
-#   rename(delta_expn_nodes = n_nodes_change,
-#          delta_expn_links = n_links_change,
-#          delta_cex_nodes = n_nodes_change_current,
-#          delta_cex_links = n_links_change_current) %>% # Want to rename to follow the
-#   select(cell, 
-#          delta_expn_nodes,
-#          delta_expn_links,
-#          delta_cex_nodes,
-#          delta_cex_links)
-# 
-# # Now join this to grid_long
-# grid_long <- grid_long %>% 
-#   left_join(grid_long_extinction_only) %>% 
-#   # Also want a few absolute (abs) rather than relative (delta) differences
-#   mutate(abs_expn_nodes = 1 - delta_expn_nodes,
-#          abs_expn_links = 1 - delta_expn_links,
-#          
-#          abs_cex_nodes = (1 - delta_cpn_nodes) - (1 - delta_expn_nodes),
-#          abs_cex_links = (1 - delta_cpn_links) - (1 - delta_expn_links),
-#          
-#          abs_ec_nodes = (1 - delta_epn_nodes) - (1 - delta_cpn_nodes),
-#          abs_ec_links = (1 - delta_epn_links) - (1 - delta_cpn_links)) %>% 
-#   # And linkage density
-#   mutate(abs_expn_ld = abs_expn_links / abs_expn_nodes,
-#          abs_cex_ld = abs_cex_links / abs_cex_nodes,
-#          abs_ec_ld = abs_ec_links / abs_ec_nodes)
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# grid_longer$metric <- factor(grid_longer$metric, levels = c("delta_cpn_nodes",
-#                                                             "delta_cpn_links",
-#                                                             "delta_cpn_linkage_density",
-#                                                             "delta_cpn_connectance",
-#                                                             "delta_cpn_predator_prey_ratio"), 
-#                              labels = c("Number of species",
-#                                         "Number of food web links",
-#                                         "Linkage density (mean links per species)",
-#                                         "Connectance",
-#                                         "Predator prey ratio"))
-# 
-# pdf(file = "change maps.pdf", width = 7.2, height = 4.5)
-# grid_longer %>% 
-#   mutate(value = ifelse(value > 2, 2, value)) %>%
-#   mutate(value = ifelse(value < 0.25, 0.25, value)) %>%
-#   ggplot(aes(x, y)) +
-#   geom_point(aes(colour = log(value)), size = 0.005, shape = 15) +
-#   facet_wrap(vars(metric), nrow=3) +
-#   scale_colour_gradient2(low = "red", mid = "grey", high = "blue", midpoint = 0,
-#                          na.value = "white",
-#                          name = "Percent change\n(current / natural)\n",
-#                          breaks=c(log(2), log(1), log(1- 0.5), log(1 - 0.75)), 
-#                          labels=c(">200% gain", "0% (no change)", "50% decline", ">75% decline"),
-#                          limits = c(log(1 - 0.75), log(2))) +
-#   theme_void() +
-#   coord_equal() +
-#   theme(legend.position = c(0.86, 0.04),
-#         legend.justification = c(1, 0),
-#         legend.key.height = unit(0.4, 'cm'),
-#         legend.title = element_text(size=10))
-# dev.off()
-# 
-# 
-# 
-# 
-# 
-# 
-# link_col <- rgb(217,95,2, maxColorValue = 255)
-# link_col_poly <- rgb(217,95,2, maxColorValue = 255, alpha = 150)
-# link_col_poly2 <- rgb(217,95,2, maxColorValue = 255, alpha = 100)
-# node_col <- rgb(117,112,179, maxColorValue = 255)
-# node_col_poly <- rgb(117,112,179, maxColorValue = 255, alpha = 150)
-# node_col_poly2 <- rgb(117,112,179, maxColorValue = 255, alpha = 100)
-# null_col <- rgb(27,158,119, maxColorValue = 255)
-# null_col_poly <- rgb(27,158,119, maxColorValue = 255, alpha = 150)
-# 
-# pdf(file = "extinction vs range loss.pdf", width = 4.5, height = 4.5)
-# 
-# par(mar = c(1, 5, 4, 2))
-# 
-# continent_df <- prop_past_metrics %>% filter(focal_years == 0) %>%
-#   group_by(continent) %>% 
-#   summarize(extinction_nodes_mean = mean(n_nodes_change, na.rm = T),
-#             extinction_nodes_hi = se_fun(n_nodes_change, dir = "hi"),
-#             extinction_nodes_lo = se_fun(n_nodes_change, dir = "lo"),
-#             extinction_links_mean = mean(n_links_change, na.rm = T),
-#             extinction_links_hi = se_fun(n_links_change, dir = "hi"),
-#             extinction_links_lo = se_fun(n_links_change, dir = "lo"),
-#             
-#             current_nodes_mean = mean(n_nodes_change_current, na.rm = T),
-#             current_nodes_hi = se_fun(n_nodes_change_current, dir = "hi"),
-#             current_nodes_lo = se_fun(n_nodes_change_current, dir = "lo"),
-#             current_links_mean = mean(n_links_change_current, na.rm = T),
-#             current_links_hi = se_fun(n_links_change_current, dir = "hi"),
-#             current_links_lo = se_fun(n_links_change_current, dir = "lo")) %>% 
-#   filter(!continent %in% c("Oceanic_main", "Caribbean") & !is.na(continent))
-# 
-# 
-# xx <- seq(1, 16, length.out = 6)
-# plot(NA,
-#      xlim = c(min(xx) - 1, max(xx) + 1),
-#      ylim = c(0.0, 1),
-#      frame = F,
-#      xaxt = "n",
-#      yaxt = "n",
-#      xlab = "",
-#      ylab = "")
-# mtext("Percent change", side = 2, line = 3.5, cex = 1.2)
-# 
-# #axis(3, at = xx, labels = NA)
-# region_labels <- c("Africa", "Australia","Eurasia", "Madagascar",
-#                    "N. America", "S. America")
-# text(region_labels, x = xx-1, y = 1.02, pos = 4, srt = 45, xpd = T)
-# axis(2, at = c(1, 0.8, 0.6, 0.4, 0.2, 0), #log(c(1, 0.5, 0.2, 0.05)), 
-#      labels = c("0%", "-20%", "-40%", "-60%", "-80%", "-100%"), las = 1)
-# seg_lwd <- 11
-# 
-# x_diff <- 0.4
-# segments(x0 = xx - x_diff,
-#          y0 = 1,
-#          y1 = continent_df$extinction_nodes_mean,
-#          lend = "butt",
-#          lwd = seg_lwd,
-#          col = node_col)
-# 
-# segments(x0 = xx - x_diff,
-#          y0 = continent_df$extinction_nodes_mean,
-#          y1 = continent_df$current_nodes_mean,
-#          lend = "butt",
-#          lwd = seg_lwd,
-#          col = node_col_poly)
-# 
-# arrows(x0 = xx - x_diff,
-#        y0 = continent_df$extinction_nodes_lo,
-#        y1 = continent_df$extinction_nodes_hi,
-#        angle = 90,
-#        code = 3,
-#        length = 0.04,
-#        col = "grey")
-# 
-# arrows(x0 = xx - x_diff,
-#        y0 = continent_df$current_nodes_lo,
-#        y1 = continent_df$current_nodes_hi,
-#        angle = 90,
-#        code = 3,
-#        length = 0.04,
-#        col = "grey")
-# 
-# segments(x0 = xx + x_diff,
-#          y0 = 1,
-#          y1 = continent_df$extinction_links_mean,
-#          lend = "butt",
-#          lwd = seg_lwd,
-#          col = link_col)
-# 
-# segments(x0 = xx + x_diff,
-#          y0 = continent_df$extinction_links_mean,
-#          y1 = continent_df$current_links_mean,
-#          lend = "butt",
-#          lwd = seg_lwd,
-#          col = link_col_poly)
-# 
-# arrows(x0 = xx + x_diff,
-#        y0 = continent_df$extinction_links_lo,
-#        y1 = continent_df$extinction_links_hi,
-#        angle = 90,
-#        code = 3,
-#        length = 0.04,
-#        col = "grey")
-# 
-# arrows(x0 = xx + x_diff,
-#        y0 = continent_df$current_links_lo,
-#        y1 = continent_df$current_links_hi,
-#        angle = 90,
-#        code = 3,
-#        length = 0.04,
-#        col = "grey")
-# 
-# segments(x0 = min(xx)-2, x1 = max(xx)+2, y0 = 1, lty = 2)
-# 
-# xx <- 14.5
-# xxd <- 1.2
-# yy <- 0.1
-# yyd <- 0.06
-# 
-# points(x = c(xx, xx + xxd, xx + xxd, xx),
-#        y = c(yy, yy + yyd, yy, yy + yyd),
-#        pch = 15,
-#        col = c(node_col_poly,
-#                link_col,
-#                link_col_poly,
-#                node_col),
-#        cex = 2)
-# text(c(xx, xx + xxd) - 0.7,
-#      yy + yyd + 0.04,
-#      pos = 4, 
-#      srt = 45,
-#      labels = c("Species", "Links"),
-#      cex = 0.8)
-# text(xx,
-#      c(yy, yy + yyd),
-#      pos = 2,
-#      labels = c("Range change", "Extinction"),
-#      cex = 0.8)
-# 
-# 
-# dev.off()
-# 
-# 
-# 
-# 
-# 
-# 
-# pdf(file = "endangerment maps.pdf", width = 3.5, height = 3.5)
-# 
-# 
-# endangered_df <- grid_web_metrics %>% 
-#   dplyr::na_if("NaN") %>% 
-#   left_join(continent_cells) %>% 
-#   mutate(nodes_endangered = n_nodes_no_endangered / n_nodes_current,
-#          links_endangered = n_links_no_endangered / n_links_current) %>% 
-#   tibble() %>% 
-#   mutate(x = (cell %% 360),
-#          y = 360 - floor(cell/360))
-# 
-# 
-# endangered_longer <- endangered_df %>% 
-#   pivot_longer(c(nodes_endangered, links_endangered), names_to = "metric", values_to = "value")
-# 
-# endangered_longer$metric <- factor(endangered_longer$metric, levels = c("nodes_endangered",
-#                                                                         "links_endangered"), 
-#                                    labels = c("Number of species",
-#                                               "Number of food web links"))
-# 
-# endangered_longer %>% 
-#   mutate(value = ifelse(value < 0.25, 0.25, value)) %>% 
-#   ggplot(aes(x, y)) +
-#   geom_point(aes(colour = log(value)), size = 0.1, shape = 15) +
-#   facet_wrap(vars(metric), nrow=3) +
-#   scale_colour_gradient2(low = "red", mid = "grey", high = "blue", midpoint = 0,
-#                          na.value = "white",
-#                          name = "Food web\nendangerment\n",
-#                          breaks=c(log(1), log(1- 0.5), log(1 - 0.75)), 
-#                          labels=c("0%", "50%", ">75%"),
-#                          limits = c(log(1 - 0.75), log(1))) +
-#   theme_void() +
-#   coord_equal() +
-#   theme(legend.position="bottom")
-# 
-# 
-# dev.off()
-# 
-# 
-# pdf(file = "endangerment bars.pdf", width = 3.5, height = 3.5)
-# 
-# par(mar = c(4, 5, 0, 0.5))
-# 
-# endangered_continent_df <- endangered_df %>%
-#   group_by(continent) %>% 
-#   summarize(extinction_nodes_mean = mean(nodes_endangered, na.rm = T),
-#             extinction_nodes_hi = se_fun(nodes_endangered, dir = "hi"),
-#             extinction_nodes_lo = se_fun(nodes_endangered, dir = "lo"),
-#             extinction_links_mean = mean(links_endangered, na.rm = T),
-#             extinction_links_hi = se_fun(links_endangered, dir = "hi"),
-#             extinction_links_lo = se_fun(links_endangered, dir = "lo")) %>% 
-#   filter(!continent %in% c("Oceanic_main", "Caribbean") & !is.na(continent))
-# 
-# 
-# xx <- seq(1, 16, length.out = 6)
-# plot(NA,
-#      xlim = c(min(xx) - 1, max(xx) + 1),
-#      ylim = c(1,0.1),
-#      frame = F,
-#      xaxt = "n",
-#      yaxt = "n",
-#      xlab = "",
-#      ylab = "")
-# mtext("Food web endangerment", side = 2, line = 3.5, cex = 1.2)
-# 
-# #axis(3, at = xx, labels = NA)
-# region_labels <- c("Africa", "Australia","Eurasia", "Madagascar",
-#                    "N. America", "S. America")
-# text(region_labels, x = xx+0.5, y = 1.02, pos = 2, srt = 45, xpd = T)
-# axis(2, at = c(1, 0.8, 0.6, 0.4, 0.2), #log(c(1, 0.5, 0.2, 0.05)), 
-#      labels = c("0%", "20%", "40%", "60%", "80%"), las = 1)
-# seg_lwd <- 9
-# 
-# x_diff <- 0.4
-# segments(x0 = xx - x_diff,
-#          y0 = 1,
-#          y1 = endangered_continent_df$extinction_nodes_mean,
-#          lend = "butt",
-#          lwd = seg_lwd,
-#          col = node_col)
-# 
-# 
-# arrows(x0 = xx - x_diff,
-#        y0 = endangered_continent_df$extinction_nodes_lo,
-#        y1 = endangered_continent_df$extinction_nodes_hi,
-#        angle = 90,
-#        code = 3,
-#        length = 0.03,
-#        col = "grey")
-# 
-# segments(x0 = xx + x_diff,
-#          y0 = 1,
-#          y1 = endangered_continent_df$extinction_links_mean,
-#          lend = "butt",
-#          lwd = seg_lwd,
-#          col = link_col)
-# 
-# 
-# arrows(x0 = xx + x_diff,
-#        y0 = endangered_continent_df$extinction_links_lo,
-#        y1 = endangered_continent_df$extinction_links_hi,
-#        angle = 90,
-#        code = 3,
-#        length = 0.03,
-#        col = "grey")
-# 
-# 
-# segments(x0 = min(xx)-2, x1 = max(xx)+2, y0 = 1, lty = 2)
-# xx <- 6
-# yy <- 0.3
-# yyd <- 0.07
-# points(x = c(xx, xx),
-#        y = c(yy, yy + yyd),
-#        pch = 15,
-#        col = c(node_col,
-#                link_col),
-#        cex = 2)
-# text(xx,
-#      c(yy, yy + yyd),
-#      pos = 2,
-#      labels = c("Species", "Links"),
-#      cex = 0.8)
-# 
-# dev.off()
-# 
-# 
-
-
-
 
 
 
