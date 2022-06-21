@@ -140,6 +140,7 @@ past_metrics <- expand_grid(cells_with_webs, focal_years, te_samp) %>%
          n_links_null = NA, n_nodes_null = NA,
          predator_prey_ratio = NA, predator_prey_ratio_null = NA)
 
+# # Will read in from saved version because this takes a long time
 # set.seed(4)
 # for(i in cells_with_webs){
 #   # Get a vector of all species that naturally occur at this cell
@@ -1061,50 +1062,6 @@ degree_mean <- degree_mean %>%
 degree_mean$extinct <- factor(degree_mean$extinct, levels = c("Extinct", "Extant"))
 degree_mean$range_binary <- factor(degree_mean$range_binary, levels = c("Range loss >10%", "Range loss <10%"))
 
-# 
-# p1 <- degree_mean %>% 
-#   ggplot(aes(degree_mean, fill = extinct, color = extinct)) +
-#   geom_density(alpha = 0.1, adjust = 1.5) +
-#   scale_x_log10() + 
-#   theme_classic() +
-#   xlab("Species degree") +
-#   ylab("Density") +
-#   theme(legend.position = c(0.7, 0.6)) +
-#   labs(fill='', color = '') +
-#   theme(plot.margin = unit(c(0.4,0.4,0.4,0.4), "cm")) +
-#   annotate(geom="text", x=1, y=3.4, label="a", fontface = 2)
-# 
-# p2 <- degree_mean %>% 
-#   filter(extinct != "Extinct") %>% 
-#   ggplot(aes(degree_mean, fill = endangered, color = endangered)) +
-#   geom_density(alpha = 0.1, adjust = 1.5) +
-#   scale_x_log10() +
-#   theme_classic() +
-#   xlab("Species degree") +
-#   ylab("Density") +
-#   theme(legend.position = c(0.7, 0.6)) +
-#   labs(fill='', color = '')  +
-#   theme(plot.margin = unit(c(0.4,0.4,0.4,0.4), "cm")) +
-#   annotate(geom="text", x=1, y=4.1, label="c", fontface = 2)
-# 
-# set.seed(44)
-# p3 <- degree_mean %>% 
-#   filter(extinct != "Extinct") %>% 
-#   ggplot(aes((range_change - 1) * -100, degree_mean)) +
-#   scale_y_log10() +
-#   #geom_point() +
-#   geom_jitter(width = 2, height = 0.05, color = "grey", size = 0.5) +
-#   theme_classic() +
-#   geom_smooth(method = lm) +
-#   xlim(0, 100) +
-#   xlab("Percent range loss") +
-#   ylab("Species degree") +
-#   theme(plot.margin = unit(c(0.4,0.4,0.4,0.4), "cm")) +
-#   annotate(geom="text", x=0, y=120, label="b", fontface = 2)
-# 
-# pdf(file = "degree plots.pdf", width = 7.2, height = 2.5)
-# gridExtra::grid.arrange(p1, p3, p2, nrow = 1)
-# dev.off()
 
 xx <- 0.5
 

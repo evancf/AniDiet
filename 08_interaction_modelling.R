@@ -12,11 +12,12 @@ intx_short <- read.csv("data/intx_short.csv")[,-1] %>% tibble()
 intx_short$consumed <- factor(intx_short$consumed)
 
 
+
 # Split into training and test -------------------------------------------------
 set.seed(4)
 sp_col <- c("consumer_sp", "resource_sp", "mammal_predator_c", "mammal_predator_r")
 intx_split <- intx_short %>% 
-  select(-all_of(sp_col)) %>% 
+  dplyr::select(-all_of(sp_col)) %>% 
   initial_split(prop = 0.75)
 train_data <- training(intx_split) 
 test_data <- testing(intx_split)
@@ -40,8 +41,7 @@ test_normalized <- bake(nnet_rec, new_data = test_data, all_predictors())
 set.seed(4)
 tensorflow::set_random_seed(4)
 nnet_fit <-
-  #mlp(epochs = 557, hidden_units = 10, dropout = 0.778, activation = "elu") %>%
-  mlp(epochs = 223, hidden_units = 6, dropout = 0.0991, activation = "elu") %>%
+  mlp(epochs = 557, hidden_units = 10, dropout = 0.778, activation = "elu") %>% # (Slow) tuning methods below
   set_mode("classification") %>% 
   set_engine("keras", verbose = T) %>%
   fit(consumed ~ ., data = bake(nnet_rec, new_data = NULL))
@@ -95,7 +95,7 @@ BIOMOD::TSS.Stat(test_conf_mat$table)
 
 # Testing performance for a trait matching logistic regression using body mass ratio
 train_data$mass_ratio <- train_data$adult_mass_g_c / train_data$adult_mass_g_r
-glm_fit <- glm(consumed ~ mass_ratio, data = train_data, family = "binomial")
+glm_fit <- glm(consumed ~ log(mass_ratio) + I(log(mass_ratio)^2), data = train_data, family = "binomial")
 summary(glm_fit)
 
 test_data$mass_ratio <- test_data$adult_mass_g_c / test_data$adult_mass_g_r
@@ -104,8 +104,13 @@ glm_val <- predict(glm_fit, newdata = test_data, type = "response")
 library("pROC")
 ModelMetrics::auc(actual = test_data$consumed, predicted = glm_val)
 set.seed(4)
-# Note that I will make estimates probabalistically since no predicted value is greater than 0.5
-glm_conf_mat <- caret::confusionMatrix(test_data$consumed, factor(rbinom(length(glm_val), 1, prob = glm_val), levels = c(0,1)))
+prob_threshold <- 0.28 # Threshold chosen to achieve equivalent mean interaction probability
+
+glm_preds <- factor(ifelse(glm_val > prob_threshold, 1, 0), levels = c(0,1))
+glm_preds %>% as.numeric() %>% mean() %>% sum(-1)
+train_data$consumed %>% as.numeric() %>% mean() %>% sum(-1)
+
+glm_conf_mat <- caret::confusionMatrix(test_data$consumed, glm_preds)
 glm_conf_mat
 BIOMOD::TSS.Stat(glm_conf_mat$table)
 
@@ -121,7 +126,7 @@ genus_combos <- train_data %>%
   filter(consumed == 1) %>% 
   tibble(consumer_gen = word(consumer_sp, 1),
          resource_gen = word(resource_sp, 1)) %>% 
-  select(consumer_gen, resource_gen)
+  dplyr::select(consumer_gen, resource_gen)
 genus_combos <- paste(genus_combos$consumer_gen,
                       genus_combos$resource_gen,
                       sep = " x ")
@@ -141,14 +146,13 @@ BIOMOD::TSS.Stat(genus_conf_mat$table)
 # Finalized model ---------------------------------------------------------------
 
 # Will fit the finalized model using all the data here
-train_data <- intx_short %>% select(-all_of(sp_col))
+train_data <- intx_short %>% dplyr::select(-all_of(sp_col))
 train_normalized <- bake(nnet_rec, new_data = train_data, all_predictors())
 
 set.seed(4)
 tensorflow::set_random_seed(4)
 nnet_fit <-
-  #mlp(epochs = 557, hidden_units = 10, dropout = 0.778, activation = "elu") %>%
-  mlp(epochs = 223, hidden_units = 6, dropout = 0.0991, activation = "elu") %>%
+  mlp(epochs = 557, hidden_units = 10, dropout = 0.778, activation = "elu") %>% 
   set_mode("classification") %>% 
   set_engine("keras", verbose = T) %>%
   fit(consumed ~ ., data = bake(nnet_rec, new_data = NULL))
@@ -265,11 +269,11 @@ iucn_categories <- read.csv("data/mamm.iucn.categories.csv", header = T)[,-1] %>
 # Get vector of endangered species names while accounting for different names across iucn and phylacine
 endangered_spp <- c(left_join(trait_data, iucn_categories, by = c("iucn2020_binomial" = "iucn.bin")) %>%  
                       filter(iucn.category %in% endangered_categories) %>% 
-                      select("iucn2020_binomial", "phylacine_binomial") %>%
+                      dplyr::select("iucn2020_binomial", "phylacine_binomial") %>%
                       unlist(),
                     left_join(trait_data, iucn_categories, by = c("phylacine_binomial" = "iucn.bin")) %>%  
                       filter(iucn.category %in% endangered_categories) %>% 
-                      select("iucn2020_binomial", "phylacine_binomial") %>%
+                      dplyr::select("iucn2020_binomial", "phylacine_binomial") %>%
                       unlist()) %>% 
   unique()
 
@@ -355,7 +359,8 @@ for(i in cells_to_sample){
         bind_cols(predict(nnet_fit, new_data = dat_pres_nat_normalized),
                   predict(nnet_fit, new_data = dat_pres_nat_normalized, type = "prob"))
       # Save this to output list
-      web_pres_nat[[i]] <- dat_pres_nat %>% filter(.pred_class == 1) %>% select("consumer_sp", "resource_sp") %>% unique()
+      web_pres_nat[[i]] <- dat_pres_nat %>% filter(.pred_class == 1) %>% 
+        dplyr::select("consumer_sp", "resource_sp") %>% unique()
     }
     
   } else{ # Cases where there's only one species 
@@ -386,7 +391,8 @@ for(i in cells_to_sample){
         bind_cols(predict(nnet_fit, new_data = dat_current_normalized),
                   predict(nnet_fit, new_data = dat_current_normalized, type = "prob"))
       # Save this to output list
-      web_current[[i]] <- dat_current %>% filter(.pred_class == 1) %>% select("consumer_sp", "resource_sp") %>% unique()
+      web_current[[i]] <- dat_current %>% filter(.pred_class == 1) %>% 
+        dplyr::select("consumer_sp", "resource_sp") %>% unique()
     }
     
   } else{ # Cases where there's only one species 
@@ -419,7 +425,8 @@ for(i in cells_to_sample){
         bind_cols(predict(nnet_fit, new_data = dat_no_endangered_normalized),
                   predict(nnet_fit, new_data = dat_no_endangered_normalized, type = "prob"))
       # Save this to output list
-      web_no_endangered[[i]] <- dat_no_endangered %>% filter(.pred_class == 1) %>% select("consumer_sp", "resource_sp") %>% unique()
+      web_no_endangered[[i]] <- dat_no_endangered %>% filter(.pred_class == 1) %>% 
+        dplyr::select("consumer_sp", "resource_sp") %>% unique()
     }
     
   } else{ # Cases where there's only one species 
@@ -434,3 +441,56 @@ for(i in cells_to_sample){
 
 # Save this 
 save(web_pres_nat, web_current, web_no_endangered, file = "data/hindcast_webs.RData")
+
+
+# # Model tuning -----------------------------------------------------------------
+# # Note that this takes a very long time to actually run, so will just hard 
+# # code the best performing values and comment this section out.
+# library("tune")
+# 
+# sp_col <- c("consumer_sp", "resource_sp", "mammal_predator_c", "mammal_predator_r")
+# intx_tune <- intx_short %>% 
+#   dplyr::select(-all_of(sp_col))
+# 
+# cv_splits <- vfold_cv(intx_tune, v = 10, strata = "consumed")
+# 
+# # Make recipe
+# intx_rec <- 
+#   recipe(consumed ~ ., data = intx_tune) %>%
+#   step_YeoJohnson(all_numeric())%>%
+#   step_normalize(all_numeric())
+# 
+# # Specify model with hyperparameters to tune
+# nn_intx_mod <-
+#   mlp(mode = "classification", hidden_units = tune(), dropout = tune(),
+#       epochs = tune(), activation = tune()) %>%
+#   set_engine("keras", 
+#              validation = .1,
+#              verbose = 0)
+# 
+# # Set up workflow
+# intx_wflow <-
+#   workflow() %>%
+#   add_model(nn_intx_mod) %>%
+#   add_recipe(intx_rec)
+# 
+# intx_set <- hardhat::extract_parameter_set_dials(intx_wflow)
+# # For some reason the above function wanted to include a tanh activation here, 
+# # which isn't actually possible with mlp... but we can fix like this
+# intx_set[[6]][4][[1]]$values <- c('linear', 'softmax', 'relu', 'elu')
+# 
+# # Develop grid of parameter values
+# intx_grid <-
+#   intx_set %>%
+#   grid_max_entropy(size = 20)
+# 
+# # Test all of these with 10 fold cv
+# initial_grid <- tune_grid(intx_wflow,
+#                           param_info = intx_set,
+#                           resamples = cv_splits, 
+#                           grid = intx_grid, 
+#                           metrics = metric_set(roc_auc),
+#                           control = control_grid(verbose = TRUE))
+# 
+# # Show the best performing set of tuning parameters
+# show_best(initial_grid, metric = "roc_auc")

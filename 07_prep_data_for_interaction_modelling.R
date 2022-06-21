@@ -403,8 +403,7 @@ intx_inverse <- intx_inverse %>%
   left_join(impute_trait_data, by = c("consumer_sp" = "phylacine_binomial")) %>% 
   left_join(impute_trait_data, by = c("resource_sp" = "phylacine_binomial"), suffix = c("_c", "_r")) %>% 
   select(all_of(c(sp_col, outcome_col, trait_col))) %>% 
-  filter(det_vend_c != 0 | det_vect_c != 0 | det_scav_c != 0 | det_vunk_c != 0) # Will remove "consumer" specie with no evidence of being vertebrate carnivores
-  #filter(mammal_predator_c)
+  filter(det_vend_c != 0 | det_vect_c != 0 | det_scav_c != 0 | det_vunk_c != 0) # Will remove "consumer" species with no evidence of being vertebrate carnivores
 
 
 # Now add these on to the intx_short
@@ -412,10 +411,15 @@ intx_short$consumed <- as.numeric(as.character(intx_short$consumed))
 intx_short <- intx_short %>% bind_rows(intx_inverse)
 intx_short$consumed <- factor(intx_short$consumed)
 
+# May want to use the long version too
+intx_tidy$consumed <- as.numeric(as.character(intx_tidy$consumed))
+intx_tidy <- intx_tidy %>% bind_rows(intx_inverse)
 
+# Write the short version to csv
+write.csv(file = "./data/intx_short.csv", intx_short)
 
 # Write this to csv
-write.csv(file = "intx_short.csv", intx_short)
+write.csv(file = "./data/intx_tidy.csv", intx_tidy)
 
 
 
